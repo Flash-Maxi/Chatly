@@ -7,10 +7,12 @@ import { BiLogOutCircle } from "react-icons/bi";
 import { serverUrl } from '../main';
 import getImageUrl from '../utils/getImageUrl';
 import axios from 'axios';
-import { setOtherUsers, setSearchData, setSelectedUser, setUserData, clearUnreadUser } from '../redux/userSlice';
+import { setOtherUsers, setSearchData, setSelectedUser, setUserData } from '../redux/userSlice';
+import { clearUserUnread } from '../redux/messageSlice';
 import { useNavigate } from 'react-router-dom';
 function SideBar() {
-    let {userData,otherUsers,selectedUser,onlineUsers,searchData,unreadUsers} = useSelector(state=>state.user)
+    let {userData,otherUsers,selectedUser,onlineUsers,searchData} = useSelector(state=>state.user)
+    let { unreadUsers } = useSelector(state => state.message)
     let [search,setSearch]=useState(false)
     let [input,setInput]=useState("")
 let dispatch=useDispatch()
@@ -77,7 +79,7 @@ console.log(error)
           {input.length>0 && searchData && searchData.length > 0 && (
             <div className='absolute top-[180px] left-4 right-4 bg-bgSurface h-[300px] overflow-y-auto rounded-md z-[150] shadow-lg'>
                 {searchData?.map((user)=>(
-                    <div key={user._id} className='w-full h-[70px] rounded-md flex items-center gap-[15px] px-4 hover:bg-bgHover cursor-pointer border-b border-gray-700' onClick={()=>{ dispatch(setSelectedUser(user)); setInput(""); setSearch(false); dispatch(setSearchData(null)); dispatch(clearUnreadUser(user._id)); }}>
+                    <div key={user._id} className='w-full h-[70px] rounded-md flex items-center gap-[15px] px-4 hover:bg-bgHover cursor-pointer border-b border-gray-700' onClick={()=>{ dispatch(setSelectedUser(user)); setInput(""); setSearch(false); dispatch(setSearchData(null)); dispatch(clearUserUnread(user._id)); }}>
                         <div className='relative rounded-full bg-gray-600 flex justify-center items-center'>
                             <div className='w-[50px] h-[50px] rounded-full overflow-hidden flex justify-center items-center'>
                                 <img src={getImageUrl(user.image)} alt="" className='h-[100%]' onError={(e)=>{e.target.onerror=null; e.target.src=dp}}/>
@@ -96,7 +98,7 @@ console.log(error)
                 <div 
                     key={user._id} 
                         className={`w-full h-[60px] flex items-center gap-[15px] px-4 rounded-md cursor-pointer ${selectedUser?._id === user._id ? 'bg-primary' : 'bg-bgInput hover:bg-bgHover'}`}
-                        onClick={()=>{ dispatch(setSelectedUser(user)); dispatch(clearUnreadUser(user._id)) }}
+                        onClick={()=>{ dispatch(setSelectedUser(user)); dispatch(clearUserUnread(user._id)) }}
                 >
                     <div className='relative rounded-full bg-gray-600 flex justify-center items-center'>
                             <div className='w-[50px] h-[50px] rounded-full overflow-hidden flex justify-center items-center'>
@@ -106,9 +108,9 @@ console.log(error)
                         <span className='w-[10px] h-[10px] rounded-full absolute bottom-0 right-0 bg-green-500'></span>}
                     </div>
                     <h1 className={`font-semibold text-[18px] ${selectedUser?._id === user._id ? 'text-white' : 'text-textMain'}`}>{user.name || user.userName}</h1>
-                                        {unreadUsers?.[user._id] && (
-                                            <span className='w-3 h-3 rounded-full bg-cyan-400 ml-auto'></span>
-                                        )}
+                                        {unreadUsers?.[user._id] && selectedUser?._id !== user._id && (
+                                                                <span className='w-3 h-3 rounded-full bg-cyan-400 ml-auto'></span>
+                                                            )}
                 </div>
             ))}
           </div>

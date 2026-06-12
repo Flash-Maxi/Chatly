@@ -10,7 +10,7 @@ import Profile from './pages/Profile'
 import getOtherUsers from './customHooks/getOtherUsers'
 import { io } from "socket.io-client"
 import { serverUrl } from './main'
-import { setOnlineUsers, markUnreadUser } from './redux/userSlice'
+import { setOnlineUsers } from './redux/userSlice'
 import { store } from './redux/store'
 import { setGlobalSocket } from './components/MessageArea'
 
@@ -37,20 +37,8 @@ function App() {
         dispatch(setOnlineUsers(users));
       });
 
-      // Mark unread users when new messages arrive and recipient is not currently selected
-      socketio.on("newMessage", (newMessage) => {
-        try {
-          console.debug('socket newMessage', newMessage);
-          const senderId = newMessage?.sender || newMessage?.senderId;
-          const currentSelected = store.getState().user.selectedUser;
-          console.debug('senderId', senderId, 'currentSelected', currentSelected?._id);
-          if (senderId && currentSelected?._id !== senderId) {
-            dispatch(markUnreadUser(senderId));
-          }
-        } catch (err) {
-          console.error('Error handling newMessage socket event', err);
-        }
-      });
+      // Socket newMessage is handled in MessageArea component to ensure messages
+      // are appended only to the currently selected conversation and others are marked unread.
     }
     return () => {
       if (socketio) {

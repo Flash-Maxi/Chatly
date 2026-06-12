@@ -12,7 +12,7 @@ import ReceiverMessage from './ReceiverMessage';
 import axios from 'axios';
 import { serverUrl } from '../main';
 import getImageUrl from '../utils/getImageUrl';
-import { setMessages } from '../redux/messageSlice';
+import { setMessages, addMessage, markUserUnread } from '../redux/messageSlice';
 
 // Global socket reference - will be set from App component
 let globalSocket = null;
@@ -60,7 +60,7 @@ const handleSendMessage=async (e)=>{
       formData.append("image",backendImage)
     }
     let result=await axios.post(`${serverUrl}/api/message/send/${selectedUser._id}`,formData,{withCredentials:true})
-    dispatch(setMessages([...messages,result.data]))
+    dispatch(addMessage(result.data))
     setInput("")
     setFrontendImage(null)
     setBackendImage(null)
@@ -86,14 +86,29 @@ const handleDownload = async () => {
     console.log("Download error:", error);
   }
 };
-useEffect(()=>{
-if(globalSocket){
-  globalSocket.on("newMessage",(mess)=>{
-    dispatch(setMessages([...messages,mess]))
-  })
-  return ()=>globalSocket.off("newMessage")
-}
-},[messages,setMessages])
+useEffect(() => {
+  if (!globalSocket) return;
+
+  const handleNewMessage = (mess) => {
+    console.log('Socket newMessage received:', mess);
+    const senderId = mess?.sender ? String(mess.sender) : null;
+    const selectedUserId = selectedUser?._id ? String(selectedUser._id) : null;
+
+    if (!senderId) return;
+
+    if (senderId === selectedUserId) {
+      dispatch(addMessage(mess));
+    } else {
+      dispatch(markUserUnread(senderId));
+    }
+  };
+
+  globalSocket.on('newMessage', handleNewMessage);
+
+  return () => {
+    globalSocket.off('newMessage', handleNewMessage);
+  };
+}, [selectedUser?._id, dispatch]);
  
   return (
     <div className={`flex-1 min-w-0 h-screen relative ${selectedUser ? 'flex' : 'hidden md:flex'} bg-bgMain border-l border-gray-800 overflow-hidden`}>

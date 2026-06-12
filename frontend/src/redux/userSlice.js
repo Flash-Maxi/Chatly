@@ -16,12 +16,14 @@ const userSlice=createSlice({
             state.unreadUsers = action.payload
          },
          markUnreadUser:(state,action)=>{
-               if(!state.unreadUsers) state.unreadUsers = {}
-               state.unreadUsers = { ...state.unreadUsers, [action.payload]: true }
+                  if(!state.unreadUsers) state.unreadUsers = {}
+                  const id = String(action.payload)
+                  state.unreadUsers = { ...state.unreadUsers, [id]: true }
          },
          clearUnreadUser:(state,action)=>{
                if(!state.unreadUsers) return
-               state.unreadUsers = { ...state.unreadUsers, [action.payload]: false }
+                  const id = String(action.payload)
+                  state.unreadUsers = { ...state.unreadUsers, [id]: false }
          },
       setUserData:(state,action)=>{
          state.userData=action.payload;

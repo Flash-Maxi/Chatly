@@ -1,16 +1,29 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const messageSlice=createSlice({
-   name:"message",
-   initialState:{
-    messages:null
-   },  
-   reducers:{
-    setMessages:(state,action)=>{
-   state.messages=action.payload
-    }
-   }
-})
+const messageSlice = createSlice({
+   name: "message",
+   initialState: {
+      messages: [],
+      unreadUsers: {}
+   },
+   reducers: {
+      setMessages: (state, action) => {
+         state.messages = action.payload || [];
+      },
 
-export const {setMessages}=messageSlice.actions
-export default messageSlice.reducer
+      addMessage: (state, action) => {
+         state.messages.push(action.payload);
+      },
+
+      markUserUnread: (state, action) => {
+         state.unreadUsers[String(action.payload)] = true;
+      },
+
+      clearUserUnread: (state, action) => {
+         state.unreadUsers[String(action.payload)] = false;
+      }
+   }
+});
+
+export const { setMessages, addMessage, markUserUnread, clearUserUnread } = messageSlice.actions;
+export default messageSlice.reducer;
