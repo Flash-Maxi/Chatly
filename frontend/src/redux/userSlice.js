@@ -8,9 +8,21 @@ const userSlice=createSlice({
     selectedUser:null,
     // socket:null, // REMOVE socket from Redux state
     onlineUsers:null,
-    searchData:null
+      searchData:null,
+      unreadUsers: {}
    },  
    reducers:{
+         setUnreadUsers:(state,action)=>{
+            state.unreadUsers = action.payload
+         },
+         markUnreadUser:(state,action)=>{
+               if(!state.unreadUsers) state.unreadUsers = {}
+               state.unreadUsers = { ...state.unreadUsers, [action.payload]: true }
+         },
+         clearUnreadUser:(state,action)=>{
+               if(!state.unreadUsers) return
+               state.unreadUsers = { ...state.unreadUsers, [action.payload]: false }
+         },
       setUserData:(state,action)=>{
          state.userData=action.payload;
          if (!action.payload) {
@@ -37,5 +49,5 @@ const userSlice=createSlice({
    }
 })
 
-export const {setUserData, setOtherUsers,setSelectedUser,setSocket,setOnlineUsers,setSearchData}=userSlice.actions
+export const {setUserData, setOtherUsers,setSelectedUser,setSocket,setOnlineUsers,setSearchData,setUnreadUsers,markUnreadUser,clearUnreadUser}=userSlice.actions
 export default userSlice.reducer

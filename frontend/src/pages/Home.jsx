@@ -9,9 +9,9 @@ function Home() {
   let {selectedUser}=useSelector(state=>state.user)
  getMessage()
   return (
-    <div className="flex h-screen bg-bgMain text-textMain">
+    <div className="w-screen h-screen flex overflow-hidden bg-bgMain text-textMain">
       <SideBar />
-      <div className="flex-1 flex flex-col bg-bgChat">
+      <div className="flex-1 min-w-0 h-screen flex flex-col bg-bgMain">
         <MessageArea />
       </div>
     </div>

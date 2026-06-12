@@ -10,7 +10,8 @@ import Profile from './pages/Profile'
 import getOtherUsers from './customHooks/getOtherUsers'
 import { io } from "socket.io-client"
 import { serverUrl } from './main'
-import { setOnlineUsers } from './redux/userSlice'
+import { setOnlineUsers, markUnreadUser } from './redux/userSlice'
+import { store } from './redux/store'
 import { setGlobalSocket } from './components/MessageArea'
 
 // Singleton socket instance
@@ -19,7 +20,7 @@ let socketio = null;
 function App() {
   getCurrentUser()
   getOtherUsers()
-  let {userData,onlineUsers}=useSelector(state=>state.user)
+  let {userData,onlineUsers,selectedUser}=useSelector(state=>state.user)
   let dispatch=useDispatch()
 
   useEffect(() => {
@@ -34,6 +35,21 @@ function App() {
       setGlobalSocket(socketio);
       socketio.on("getOnlineUsers", (users) => {
         dispatch(setOnlineUsers(users));
+      });
+
+      // Mark unread users when new messages arrive and recipient is not currently selected
+      socketio.on("newMessage", (newMessage) => {
+        try {
+          console.debug('socket newMessage', newMessage);
+          const senderId = newMessage?.sender || newMessage?.senderId;
+          const currentSelected = store.getState().user.selectedUser;
+          console.debug('senderId', senderId, 'currentSelected', currentSelected?._id);
+          if (senderId && currentSelected?._id !== senderId) {
+            dispatch(markUnreadUser(senderId));
+          }
+        } catch (err) {
+          console.error('Error handling newMessage socket event', err);
+        }
       });
     }
     return () => {

@@ -22,8 +22,8 @@ function ChatInput({ onSendMessage }) {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 p-3 bg-[#1e293b] border-t border-slate-700">
-      <div className="max-w-4xl mx-auto flex items-center gap-2 bg-[#0f172a] rounded-full px-4 py-2">
+    <div className="w-full bg-bgSurface px-5 py-4 border-t border-slate-700">
+      <div className="w-full flex items-center gap-2 bg-bgChat rounded-full px-4 py-1">
         {/* Emoji Button */}
         <button className="p-2 hover:bg-slate-700 rounded-full transition-colors">
           <RiEmojiStickerLine className="w-5 h-5 text-slate-400" />
@@ -41,7 +41,7 @@ function ChatInput({ onSendMessage }) {
           onChange={(e) => setInputText(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Type a message..."
-          className="flex-1 bg-transparent text-[#e2e8f0] placeholder-slate-500 outline-none text-sm"
+          className="w-full h-[58px] rounded-full bg-transparent text-[#e2e8f0] placeholder-slate-500 outline-none text-sm px-4"
         />
 
         {/* Send or Mic Button */}

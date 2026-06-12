@@ -96,16 +96,16 @@ if(globalSocket){
 },[messages,setMessages])
  
   return (
-    <div className={`lg:w-[70%] relative ${selectedUser?"flex":"hidden"} lg:flex w-full h-full bg-bgChat border-l border-gray-800 overflow-hidden`}>
+    <div className={`flex-1 min-w-0 h-screen relative ${selectedUser ? 'flex' : 'hidden md:flex'} bg-bgMain border-l border-gray-800 overflow-hidden`}>
       
 {selectedUser && 
 <div className='w-full h-full flex flex-col overflow-hidden'>
   {/* ChatHeader */}
-  <div className="flex items-center justify-between px-6 py-3 border-b border-gray-800">
+  <div className="shrink-0 h-[75px] flex items-center justify-between px-6 border-b border-gray-800">
     {/* Left */}
-    <div className="flex items-center gap-3">
-      <button className="lg:hidden cursor-pointer" onClick={()=>dispatch(setSelectedUser(null))}>
-        <IoIosArrowRoundBack className="w-6 h-6 text-textMain" />
+      <div className="flex items-center gap-3">
+      <button className="text-textMain text-3xl cursor-pointer hover:text-primary shrink-0" onClick={()=>dispatch(setSelectedUser(null))}>
+        <IoIosArrowRoundBack />
       </button>
 
       <img src={getImageUrl(selectedUser?.image)} className="w-10 h-10 rounded-full" onError={(e)=>{e.target.onerror=null; e.target.src=dp}} />
@@ -134,7 +134,7 @@ if(globalSocket){
   </div>
 
   {/* MessageList */}
-  <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+  <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 justify-end">
     {showPicker && (
       <div className='absolute bottom-[90px] left-4 z-50'>
         <EmojiPicker width={250} height={350} className='shadow-lg' onEmojiClick={onEmojiClick}/>
@@ -149,18 +149,18 @@ if(globalSocket){
   </div>
 
   {/* ChatInput */}
-  <div className='w-full h-[80px] bg-bgSurface flex items-center justify-center px-4 border-t border-gray-800'>
+  <div className='shrink-0 w-full bg-bgSurface px-5 py-4 border-t border-gray-800'>
     {frontendImage && (
       <img src={frontendImage} alt="" className='absolute bottom-[100px] right-4 w-[80px] rounded-lg shadow-lg'/>
     )}
-    <form className='w-full max-w-[700px] h-[50px] bg-bgChat flex items-center gap-3 px-4 rounded-full border border-gray-700' onSubmit={handleSendMessage}>
+    <form className='w-full h-[58px] bg-bgChat flex items-center gap-3 px-4 rounded-full border border-gray-700' onSubmit={handleSendMessage}>
       <div onClick={()=>setShowPicker(prev=>!prev)} className='cursor-pointer'>
         <RiEmojiStickerLine className='w-[22px] h-[22px] text-textSub hover:text-textMain'/>
       </div>
       <input type="file" accept="image/*" ref={image} hidden onChange={handleImage}/>
       <input 
         type="text" 
-        className='flex-1 h-full outline-none border-0 text-base text-textMain bg-transparent placeholder-textSub' 
+        className='flex-1 h-full outline-none border-0 text-base text-textMain bg-transparent placeholder-textSub w-full' 
         placeholder='Message' 
         onChange={(e)=>setInput(e.target.value)} 
         value={input}

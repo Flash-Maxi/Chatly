@@ -5,12 +5,12 @@ import { BsThreeDotsVertical } from 'react-icons/bs';
 
 function ChatHeader({ username = "Adi", avatar, isOnline = true, onBack }) {
   return (
-    <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-[#1e293b] border-b border-slate-700">
+    <div className="shrink-0 h-[75px] z-10 flex items-center justify-between px-4 bg-[#1e293b] border-b border-slate-700">
       <div className="flex items-center gap-3">
-        {/* Back Button */}
+        {/* Back Button - always visible */}
         <button 
           onClick={onBack}
-          className="lg:hidden p-2 hover:bg-slate-700 rounded-full transition-colors"
+          className="p-2 hover:bg-slate-700 rounded-full transition-colors"
         >
           <IoArrowBack className="w-5 h-5 text-slate-300" />
         </button>

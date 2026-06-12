@@ -7,10 +7,10 @@ import { BiLogOutCircle } from "react-icons/bi";
 import { serverUrl } from '../main';
 import getImageUrl from '../utils/getImageUrl';
 import axios from 'axios';
-import { setOtherUsers, setSearchData, setSelectedUser, setUserData } from '../redux/userSlice';
+import { setOtherUsers, setSearchData, setSelectedUser, setUserData, clearUnreadUser } from '../redux/userSlice';
 import { useNavigate } from 'react-router-dom';
 function SideBar() {
-    let {userData,otherUsers,selectedUser,onlineUsers,searchData} = useSelector(state=>state.user)
+    let {userData,otherUsers,selectedUser,onlineUsers,searchData,unreadUsers} = useSelector(state=>state.user)
     let [search,setSearch]=useState(false)
     let [input,setInput]=useState("")
 let dispatch=useDispatch()
@@ -44,7 +44,7 @@ console.log(error)
 
     },[input])
   return (
-     <div className={`lg:w-[300px] w-full h-full overflow-hidden lg:block bg-bgSidebar flex flex-col p-4 ${!selectedUser?"block":"hidden"}`}>
+      <div className={`w-[350px] shrink-0 h-screen bg-bgSidebar p-4 ${selectedUser ? 'hidden md:flex' : 'flex'} flex-col`}>
           {/* App Name */}
           <h1 className="text-xl font-bold text-primary mb-6">chatly</h1>
 
@@ -77,18 +77,12 @@ console.log(error)
           {input.length>0 && searchData && searchData.length > 0 && (
             <div className='absolute top-[180px] left-4 right-4 bg-bgSurface h-[300px] overflow-y-auto rounded-md z-[150] shadow-lg'>
                 {searchData?.map((user)=>(
-                    <div key={user._id} className='w-full h-[70px] flex items-center gap-[15px] px-4 hover:bg-bgChat cursor-pointer border-b border-gray-700' onClick={()=>{
-                        dispatch(setSelectedUser(user))
-                        setInput("")
-                        setSearch(false)
-                        dispatch(setSearchData(null))
-                    }}>
+                    <div key={user._id} className='w-full h-[70px] rounded-md flex items-center gap-[15px] px-4 hover:bg-bgHover cursor-pointer border-b border-gray-700' onClick={()=>{ dispatch(setSelectedUser(user)); setInput(""); setSearch(false); dispatch(setSearchData(null)); dispatch(clearUnreadUser(user._id)); }}>
                         <div className='relative rounded-full bg-gray-600 flex justify-center items-center'>
                             <div className='w-[50px] h-[50px] rounded-full overflow-hidden flex justify-center items-center'>
                                 <img src={getImageUrl(user.image)} alt="" className='h-[100%]' onError={(e)=>{e.target.onerror=null; e.target.src=dp}}/>
                             </div>
-                            {onlineUsers?.includes(user._id) &&
-                            <span className='w-[10px] h-[10px] rounded-full absolute bottom-0 right-0 bg-green-500'></span>}
+                            {onlineUsers?.includes(user._id) && <span className='w-[10px] h-[10px] rounded-full absolute bottom-0 right-0 bg-green-500'></span>}
                         </div>
                         <h1 className='text-textMain font-semibold text-[18px]'>{user.name || user.userName}</h1>
                     </div>
@@ -98,11 +92,11 @@ console.log(error)
 
           {/* Chat list */}
           <div className="flex flex-col gap-2 flex-1 overflow-auto">
-            {otherUsers?.map((user)=>(
+                {otherUsers?.map((user)=>(
                 <div 
                     key={user._id} 
-                    className={`w-full h-[60px] flex items-center gap-[15px] px-4 rounded-md cursor-pointer ${selectedUser?._id === user._id ? 'bg-primary' : 'bg-bgSurface hover:bg-bgChat'}`}
-                    onClick={()=>dispatch(setSelectedUser(user))}
+                        className={`w-full h-[60px] flex items-center gap-[15px] px-4 rounded-md cursor-pointer ${selectedUser?._id === user._id ? 'bg-primary' : 'bg-bgInput hover:bg-bgHover'}`}
+                        onClick={()=>{ dispatch(setSelectedUser(user)); dispatch(clearUnreadUser(user._id)) }}
                 >
                     <div className='relative rounded-full bg-gray-600 flex justify-center items-center'>
                             <div className='w-[50px] h-[50px] rounded-full overflow-hidden flex justify-center items-center'>
@@ -112,6 +106,9 @@ console.log(error)
                         <span className='w-[10px] h-[10px] rounded-full absolute bottom-0 right-0 bg-green-500'></span>}
                     </div>
                     <h1 className={`font-semibold text-[18px] ${selectedUser?._id === user._id ? 'text-white' : 'text-textMain'}`}>{user.name || user.userName}</h1>
+                                        {unreadUsers?.[user._id] && (
+                                            <span className='w-3 h-3 rounded-full bg-cyan-400 ml-auto'></span>
+                                        )}
                 </div>
             ))}
           </div>
