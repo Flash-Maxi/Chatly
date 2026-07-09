@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
 import dp from "../assets/dp.webp"
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedUser } from '../redux/userSlice';
+import { setSelectedUser, moveUserToTop } from '../redux/userSlice';
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { FaImages, FaDownload } from "react-icons/fa6";
 import { RiSendPlane2Fill } from "react-icons/ri";
@@ -31,6 +31,10 @@ let [frontendImage,setFrontendImage]=useState(null)
 let [backendImage,setBackendImage]=useState(null)
 let [selectedImage,setSelectedImage]=useState(null)
 let image=useRef()
+let menuRef=useRef()
+let messageInputRef=useRef()
+let emojiButtonRef=useRef()
+let emojiPickerRef=useRef()
 let {messages}=useSelector(state=>state.message)
 
 const handleClearChat = async () => {
@@ -62,6 +66,7 @@ const handleSendMessage=async (e)=>{
     }
     let result=await axios.post(`${serverUrl}/api/message/send/${selectedUser._id}`,formData,{withCredentials:true})
     dispatch(addMessage(result.data))
+    dispatch(moveUserToTop(selectedUser._id))
     setInput("")
     setFrontendImage(null)
     setBackendImage(null)
@@ -102,6 +107,7 @@ useEffect(() => {
     } else {
       dispatch(markUserUnread(senderId));
     }
+    dispatch(moveUserToTop(senderId));
   };
 
   globalSocket.on('newMessage', handleNewMessage);
@@ -110,6 +116,44 @@ useEffect(() => {
     globalSocket.off('newMessage', handleNewMessage);
   };
 }, [selectedUser?._id, dispatch]);
+
+useEffect(() => {
+  if (!menuOpen) return;
+
+  const handleClickOutside = (e) => {
+    if (menuRef.current && !menuRef.current.contains(e.target)) {
+      setMenuOpen(false)
+    }
+  }
+
+  document.addEventListener('mousedown', handleClickOutside)
+
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside)
+  }
+}, [menuOpen])
+
+useEffect(() => {
+  if (selectedUser && messageInputRef.current) {
+    messageInputRef.current.focus()
+  }
+}, [selectedUser?._id])
+
+useEffect(() => {
+  if (!showPicker) return
+
+  const handleClickOutside = (e) => {
+    if (emojiButtonRef.current && !emojiButtonRef.current.contains(e.target) && emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+      setShowPicker(false)
+    }
+  }
+
+  document.addEventListener('mousedown', handleClickOutside)
+
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside)
+  }
+}, [showPicker])
  
   return (
     <div className={`flex-1 min-w-0 h-screen relative ${selectedUser ? 'flex' : 'hidden md:flex'} bg-bgMain border-l border-white/10 overflow-hidden`}>
@@ -138,13 +182,13 @@ useEffect(() => {
       </div>
 
       <div className='min-w-0'>
-        <p className="font-semibold text-textMain truncate">{selectedUser?.name || "user"}</p>
+        <p className="font-semibold text-textMain truncate">{selectedUser?.name || selectedUser?.userName || "user"}</p>
         {onlineUsers?.includes(selectedUser._id) && <p className="text-sm text-green-400">online</p>}
       </div>
     </div>
 
     {/* Right */}
-    <div className="relative shrink-0">
+    <div className="relative shrink-0" ref={menuRef}>
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.92 }}
@@ -186,6 +230,7 @@ useEffect(() => {
         exit={{ opacity: 0, y: 10, scale: 0.96 }}
         transition={{ duration: 0.2 }}
         className='absolute bottom-[90px] left-4 z-50'
+        ref={emojiPickerRef}
       >
         <EmojiPicker width={250} height={350} className='shadow-2xl rounded-xl overflow-hidden' onEmojiClick={onEmojiClick}/>
       </motion.div>
@@ -215,7 +260,7 @@ useEffect(() => {
     )}
     </AnimatePresence>
     <form className='w-full h-[58px] bg-bgChat/80 backdrop-blur-md flex items-center gap-3 px-4 rounded-full border border-white/10 shadow-sm focus-within:border-primary/60 transition-colors' onSubmit={handleSendMessage}>
-      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={()=>setShowPicker(prev=>!prev)} className='cursor-pointer' role="button" aria-label="Toggle emoji picker" tabIndex={0}>
+      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={()=>setShowPicker(prev=>!prev)} className='cursor-pointer' role="button" aria-label="Toggle emoji picker" tabIndex={0} ref={emojiButtonRef}>
         <RiEmojiStickerLine className='w-[22px] h-[22px] text-textSub hover:text-textMain transition-colors'/>
       </motion.div>
       <input type="file" accept="image/*" ref={image} hidden onChange={handleImage}/>
@@ -226,6 +271,7 @@ useEffect(() => {
         placeholder='Message' 
         onChange={(e)=>setInput(e.target.value)} 
         value={input}
+        ref={messageInputRef}
       />
       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={()=>image.current.click()} className='cursor-pointer' role="button" aria-label="Attach image" tabIndex={0}>
         <FaImages className='w-[22px] h-[22px] text-textSub hover:text-textMain transition-colors'/>
