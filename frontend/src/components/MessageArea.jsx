@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
 import dp from "../assets/dp.webp"
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedUser, moveUserToTop } from '../redux/userSlice';
+import { setSelectedUser } from '../redux/userSlice';
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { FaImages, FaDownload } from "react-icons/fa6";
 import { RiSendPlane2Fill } from "react-icons/ri";
@@ -13,6 +13,7 @@ import axios from 'axios';
 import { serverUrl } from '../main';
 import getImageUrl from '../utils/getImageUrl';
 import { setMessages, addMessage, markUserUnread } from '../redux/messageSlice';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Global socket reference - will be set from App component
 let globalSocket = null;
@@ -30,8 +31,6 @@ let [frontendImage,setFrontendImage]=useState(null)
 let [backendImage,setBackendImage]=useState(null)
 let [selectedImage,setSelectedImage]=useState(null)
 let image=useRef()
-let menuRef=useRef(null)
-let messageInputRef=useRef(null)
 let {messages}=useSelector(state=>state.message)
 
 const handleClearChat = async () => {
@@ -63,7 +62,6 @@ const handleSendMessage=async (e)=>{
     }
     let result=await axios.post(`${serverUrl}/api/message/send/${selectedUser._id}`,formData,{withCredentials:true})
     dispatch(addMessage(result.data))
-    dispatch(moveUserToTop(selectedUser._id))
     setInput("")
     setFrontendImage(null)
     setBackendImage(null)
@@ -104,8 +102,6 @@ useEffect(() => {
     } else {
       dispatch(markUserUnread(senderId));
     }
-
-    dispatch(moveUserToTop(senderId));
   };
 
   globalSocket.on('newMessage', handleNewMessage);
@@ -114,74 +110,87 @@ useEffect(() => {
     globalSocket.off('newMessage', handleNewMessage);
   };
 }, [selectedUser?._id, dispatch]);
-
-useEffect(() => {
-  if (selectedUser && messageInputRef.current) {
-    messageInputRef.current.focus()
-  }
-}, [selectedUser?._id])
-
-useEffect(() => {
-  if (!menuOpen) return;
-
-  const handleOutsideClick = (e) => {
-    if (menuRef.current && !menuRef.current.contains(e.target)) {
-      setMenuOpen(false)
-    }
-  };
-
-  document.addEventListener('mousedown', handleOutsideClick);
-
-  return () => {
-    document.removeEventListener('mousedown', handleOutsideClick);
-  };
-}, [menuOpen]);
  
   return (
-    <div className={`flex-1 min-w-0 h-screen relative ${selectedUser ? 'flex' : 'hidden md:flex'} bg-bgMain border-l border-gray-800 overflow-hidden`}>
+    <div className={`flex-1 min-w-0 h-screen relative ${selectedUser ? 'flex' : 'hidden md:flex'} bg-bgMain border-l border-white/10 overflow-hidden`}>
       
 {selectedUser && 
 <div className='w-full h-full flex flex-col overflow-hidden'>
   {/* ChatHeader */}
-  <div className="shrink-0 h-[75px] flex items-center justify-between px-6 border-b border-gray-800">
+  <div className="shrink-0 h-[75px] flex items-center justify-between px-4 sm:px-6 border-b border-white/10 bg-bgMain/80 backdrop-blur-xl z-20">
     {/* Left */}
-      <div className="flex items-center gap-3">
-      <button className="text-textMain text-3xl cursor-pointer hover:text-primary shrink-0" onClick={()=>dispatch(setSelectedUser(null))}>
+      <div className="flex items-center gap-3 min-w-0">
+      <motion.button
+        whileHover={{ scale: 1.1, x: -2 }}
+        whileTap={{ scale: 0.9 }}
+        aria-label="Back"
+        className="text-textMain text-3xl cursor-pointer hover:text-primary shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+        onClick={()=>dispatch(setSelectedUser(null))}
+      >
         <IoIosArrowRoundBack />
-      </button>
+      </motion.button>
 
-      <img src={getImageUrl(selectedUser?.image)} className="w-10 h-10 rounded-full" onError={(e)=>{e.target.onerror=null; e.target.src=dp}} />
+      <div className='relative shrink-0'>
+        <img src={getImageUrl(selectedUser?.image)} alt="" className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/30" onError={(e)=>{e.target.onerror=null; e.target.src=dp}} />
+        {onlineUsers?.includes(selectedUser._id) && (
+          <span className='absolute bottom-0 right-0 w-[10px] h-[10px] rounded-full bg-green-500 ring-2 ring-bgMain'></span>
+        )}
+      </div>
 
-      <div>
-        <p className="font-semibold text-textMain">{selectedUser?.name || "user"}</p>
+      <div className='min-w-0'>
+        <p className="font-semibold text-textMain truncate">{selectedUser?.name || "user"}</p>
         {onlineUsers?.includes(selectedUser._id) && <p className="text-sm text-green-400">online</p>}
       </div>
     </div>
 
     {/* Right */}
-    <div className="relative" ref={menuRef}>
-      <button onClick={() => setMenuOpen(!menuOpen)} className="text-textMain text-2xl">⋮</button>
+    <div className="relative shrink-0">
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.92 }}
+        aria-label="Chat options"
+        onClick={() => setMenuOpen(!menuOpen)}
+        className="text-textMain text-2xl w-9 h-9 flex items-center justify-center rounded-full hover:bg-bgSurface/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        ⋮
+      </motion.button>
 
+      <AnimatePresence>
       {menuOpen && (
-        <div className="absolute right-0 mt-2 w-40 bg-bgSurface border border-gray-700 rounded-md shadow-lg z-50">
+        <motion.div
+          initial={{ opacity: 0, y: -6, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -6, scale: 0.96 }}
+          transition={{ duration: 0.18 }}
+          className="absolute right-0 mt-2 w-40 bg-bgSurface/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+        >
           <button
             onClick={handleClearChat}
-            className="w-full text-left px-4 py-2 hover:bg-gray-700 text-red-400"
+            className="w-full text-left px-4 py-2.5 hover:bg-red-500/10 text-red-400 transition-colors"
           >
             Clear Chat
           </button>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   </div>
 
   {/* MessageList */}
-  <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 justify-end">
+  <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 justify-end">
+    <AnimatePresence>
     {showPicker && (
-      <div className='absolute bottom-[90px] left-4 z-50'>
-        <EmojiPicker width={250} height={350} className='shadow-lg' onEmojiClick={onEmojiClick}/>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 10, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 10, scale: 0.96 }}
+        transition={{ duration: 0.2 }}
+        className='absolute bottom-[90px] left-4 z-50'
+      >
+        <EmojiPicker width={250} height={350} className='shadow-2xl rounded-xl overflow-hidden' onEmojiClick={onEmojiClick}/>
+      </motion.div>
     )}
+    </AnimatePresence>
 
     {messages && messages.map((mess) => (
       mess.sender === userData._id
@@ -191,48 +200,95 @@ useEffect(() => {
   </div>
 
   {/* ChatInput */}
-  <div className='shrink-0 w-full bg-bgSurface px-5 py-4 border-t border-gray-800'>
+  <div className='shrink-0 w-full bg-bgSurface/80 backdrop-blur-xl px-4 sm:px-5 py-4 border-t border-white/10'>
+    <AnimatePresence>
     {frontendImage && (
-      <img src={frontendImage} alt="" className='absolute bottom-[100px] right-4 w-[80px] rounded-lg shadow-lg'/>
+      <motion.div
+        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 10, scale: 0.9 }}
+        transition={{ duration: 0.2 }}
+        className='absolute bottom-[100px] right-4 sm:right-6'
+      >
+        <img src={frontendImage} alt="" className='w-[80px] rounded-lg shadow-xl ring-2 ring-primary/40'/>
+      </motion.div>
     )}
-    <form className='w-full h-[58px] bg-bgChat flex items-center gap-3 px-4 rounded-full border border-gray-700' onSubmit={handleSendMessage}>
-      <div onClick={()=>setShowPicker(prev=>!prev)} className='cursor-pointer'>
-        <RiEmojiStickerLine className='w-[22px] h-[22px] text-textSub hover:text-textMain'/>
-      </div>
+    </AnimatePresence>
+    <form className='w-full h-[58px] bg-bgChat/80 backdrop-blur-md flex items-center gap-3 px-4 rounded-full border border-white/10 shadow-sm focus-within:border-primary/60 transition-colors' onSubmit={handleSendMessage}>
+      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={()=>setShowPicker(prev=>!prev)} className='cursor-pointer' role="button" aria-label="Toggle emoji picker" tabIndex={0}>
+        <RiEmojiStickerLine className='w-[22px] h-[22px] text-textSub hover:text-textMain transition-colors'/>
+      </motion.div>
       <input type="file" accept="image/*" ref={image} hidden onChange={handleImage}/>
       <input 
-        ref={messageInputRef}
         type="text" 
+        aria-label="Message"
         className='flex-1 h-full outline-none border-0 text-base text-textMain bg-transparent placeholder-textSub w-full' 
         placeholder='Message' 
         onChange={(e)=>setInput(e.target.value)} 
         value={input}
       />
-      <div onClick={()=>image.current.click()} className='cursor-pointer'>
-        <FaImages className='w-[22px] h-[22px] text-textSub hover:text-textMain'/>
-      </div>
+      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={()=>image.current.click()} className='cursor-pointer' role="button" aria-label="Attach image" tabIndex={0}>
+        <FaImages className='w-[22px] h-[22px] text-textSub hover:text-textMain transition-colors'/>
+      </motion.div>
+      <AnimatePresence>
       {(input.length>0 || backendImage!=null) && (
-        <button type="submit" className='cursor-pointer'>
+        <motion.button
+          type="submit"
+          aria-label="Send message"
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.6 }}
+          whileHover={{ scale: 1.12 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ duration: 0.15 }}
+          className='cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full'
+        >
           <RiSendPlane2Fill className='w-[22px] h-[22px] text-primary hover:opacity-80'/>
-        </button>
+        </motion.button>
       )}
+      </AnimatePresence>
     </form>
   </div>
 </div> 
 }
 {!selectedUser && 
-<div className='w-full h-full flex flex-col justify-center items-center'>
-  <h1 className='text-textMain font-bold text-4xl'>Welcome to Chatily</h1>
-  <span className='text-textSub font-semibold text-xl'>Chat Friendly !</span>
+<div className='relative w-full h-full flex flex-col justify-center items-center overflow-hidden'>
+  <div className='pointer-events-none absolute inset-0 overflow-hidden' aria-hidden="true">
+    <div className='absolute top-1/4 -left-20 w-[300px] h-[300px] rounded-full bg-primary/20 blur-[110px]' />
+    <div className='absolute bottom-1/4 -right-20 w-[300px] h-[300px] rounded-full bg-primary/10 blur-[110px]' />
+  </div>
+  <motion.h1
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+    className='relative z-10 bg-gradient-to-r from-textMain to-textMain/60 bg-clip-text text-transparent font-bold text-3xl sm:text-4xl text-center px-4'
+  >
+    Welcome to Chatily
+  </motion.h1>
+  <motion.span
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.1 }}
+    className='relative z-10 text-textSub font-semibold text-xl mt-2'
+  >
+    Chat Friendly !
+  </motion.span>
 </div>}
 
+<AnimatePresence>
 {selectedImage && (
-      <div
-        className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         onClick={() => setSelectedImage(null)}
       >
         <div className="absolute top-4 left-6 flex gap-4 text-white text-2xl">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               e.stopPropagation();
               handleDownload();
@@ -241,25 +297,32 @@ useEffect(() => {
             title="Download image"
           >
             <FaDownload />
-          </button>
+          </motion.button>
         </div>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
           className="absolute top-4 right-6 text-white text-3xl hover:text-gray-300"
           onClick={() => setSelectedImage(null)}
           title="Close"
         >
           ×
-        </button>
+        </motion.button>
 
-        <img
+        <motion.img
+          initial={{ scale: 0.92, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.92, opacity: 0 }}
+          transition={{ duration: 0.2 }}
           src={selectedImage}
           alt="preview"
           className="max-w-full max-h-full rounded-xl shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         />
-      </div>
+      </motion.div>
     )}
+</AnimatePresence>
 
     </div>
   )
