@@ -1,7 +1,5 @@
 import uploadOnCloudinary from "../config/cloudinary.js"
 import User from "../models/user.model.js"
-import Message from "../models/message.model.js"
-import mongoose from "mongoose"
 
 export const getCurrentUser=async (req,res)=>{
 try {
@@ -53,63 +51,10 @@ export const editProfile=async (req,res)=>{
 
 export const getOtherUsers=async (req,res)=>{
     try {
-        const currentUserId = new mongoose.Types.ObjectId(req.userId)
-
-        const latestMessageMap = await Message.aggregate([
-            {
-                $match: {
-                    $or: [
-                        { sender: currentUserId },
-                        { receiver: currentUserId }
-                    ]
-                }
-            },
-            {
-                $addFields: {
-                    conversationPartner: {
-                        $cond: [
-                            { $eq: ["$sender", currentUserId] },
-                            "$receiver",
-                            "$sender"
-                        ]
-                    }
-                }
-            },
-            {
-                $sort: { createdAt: -1 }
-            },
-            {
-                $group: {
-                    _id: "$conversationPartner",
-                    lastMessageAt: { $first: "$createdAt" }
-                }
-            }
-        ])
-
-        const latestMessageByUser = new Map(
-            latestMessageMap.map((item) => [item._id.toString(), item.lastMessageAt])
-        )
-
         let users=await User.find({
             _id:{$ne:req.userId}
         }).select("-password")
-
-        const usersWithRecency = users.map((user) => {
-            const userObject = user.toObject()
-            userObject.lastMessageAt = latestMessageByUser.get(user._id.toString()) || null
-            return userObject
-        })
-
-        usersWithRecency.sort((a, b) => {
-            const hasA = !!a.lastMessageAt
-            const hasB = !!b.lastMessageAt
-
-            if (hasA === hasB) return 0
-            if (hasA) return -1
-            return 1
-        })
-
-        return res.status(200).json(usersWithRecency)
+        return res.status(200).json(users)
     } catch (error) {
         return res.status(500).json({message:`get other users error ${error}`})
     }

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
 import dp from "../assets/dp.webp"
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedUser } from '../redux/userSlice';
+import { setSelectedUser, moveUserToTop } from '../redux/userSlice';
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { FaImages, FaDownload } from "react-icons/fa6";
 import { RiSendPlane2Fill } from "react-icons/ri";
@@ -30,6 +30,8 @@ let [frontendImage,setFrontendImage]=useState(null)
 let [backendImage,setBackendImage]=useState(null)
 let [selectedImage,setSelectedImage]=useState(null)
 let image=useRef()
+let menuRef=useRef(null)
+let messageInputRef=useRef(null)
 let {messages}=useSelector(state=>state.message)
 
 const handleClearChat = async () => {
@@ -61,6 +63,7 @@ const handleSendMessage=async (e)=>{
     }
     let result=await axios.post(`${serverUrl}/api/message/send/${selectedUser._id}`,formData,{withCredentials:true})
     dispatch(addMessage(result.data))
+    dispatch(moveUserToTop(selectedUser._id))
     setInput("")
     setFrontendImage(null)
     setBackendImage(null)
@@ -101,6 +104,8 @@ useEffect(() => {
     } else {
       dispatch(markUserUnread(senderId));
     }
+
+    dispatch(moveUserToTop(senderId));
   };
 
   globalSocket.on('newMessage', handleNewMessage);
@@ -109,6 +114,28 @@ useEffect(() => {
     globalSocket.off('newMessage', handleNewMessage);
   };
 }, [selectedUser?._id, dispatch]);
+
+useEffect(() => {
+  if (selectedUser && messageInputRef.current) {
+    messageInputRef.current.focus()
+  }
+}, [selectedUser?._id])
+
+useEffect(() => {
+  if (!menuOpen) return;
+
+  const handleOutsideClick = (e) => {
+    if (menuRef.current && !menuRef.current.contains(e.target)) {
+      setMenuOpen(false)
+    }
+  };
+
+  document.addEventListener('mousedown', handleOutsideClick);
+
+  return () => {
+    document.removeEventListener('mousedown', handleOutsideClick);
+  };
+}, [menuOpen]);
  
   return (
     <div className={`flex-1 min-w-0 h-screen relative ${selectedUser ? 'flex' : 'hidden md:flex'} bg-bgMain border-l border-gray-800 overflow-hidden`}>
@@ -132,7 +159,7 @@ useEffect(() => {
     </div>
 
     {/* Right */}
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <button onClick={() => setMenuOpen(!menuOpen)} className="text-textMain text-2xl">⋮</button>
 
       {menuOpen && (
@@ -174,6 +201,7 @@ useEffect(() => {
       </div>
       <input type="file" accept="image/*" ref={image} hidden onChange={handleImage}/>
       <input 
+        ref={messageInputRef}
         type="text" 
         className='flex-1 h-full outline-none border-0 text-base text-textMain bg-transparent placeholder-textSub w-full' 
         placeholder='Message' 
