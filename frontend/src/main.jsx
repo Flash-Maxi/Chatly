@@ -3,8 +3,11 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
-import {Provider} from "react-redux"
+import { Provider } from "react-redux"
 import { store } from './redux/store.js'
+import { ToastProvider } from './context/ToastContext.jsx'
+import { ThemeProvider } from './context/ThemeContext.jsx'
+
 
 export const serverUrl = "http://localhost:5000"
 
@@ -18,7 +21,11 @@ if (!container.__reactRoot) {
     root.render(
         <BrowserRouter>
             <Provider store={store}>
-                <App />
+                <ThemeProvider>
+                    <ToastProvider>
+                        <App />
+                    </ToastProvider>
+                </ThemeProvider>
             </Provider>
         </BrowserRouter>
     )
@@ -27,7 +34,11 @@ if (!container.__reactRoot) {
     container.__reactRoot.render(
         <BrowserRouter>
             <Provider store={store}>
-                <App />
+                <ThemeProvider>
+                    <ToastProvider>
+                        <App />
+                    </ToastProvider>
+                </ThemeProvider>
             </Provider>
         </BrowserRouter>
     )
