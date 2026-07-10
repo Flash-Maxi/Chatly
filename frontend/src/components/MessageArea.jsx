@@ -37,6 +37,7 @@ let menuRef=useRef()
 let messageInputRef=useRef()
 let emojiButtonRef=useRef()
 let emojiPickerRef=useRef()
+let messageListRef=useRef()
 let hinglishWarningConversations=useRef(new Set())
 let {messages}=useSelector(state=>state.message)
 const { error: showError, warning: showWarning } = useToast()
@@ -186,9 +187,16 @@ useEffect(() => {
     document.removeEventListener('mousedown', handleClickOutside)
   }
 }, [showPicker])
+
+useEffect(() => {
+  const messageList = messageListRef.current
+  if (!messageList) return
+
+  messageList.scrollTo({ top: messageList.scrollHeight, behavior: 'smooth' })
+}, [messages.length, selectedUser?._id])
  
   return (
-    <div className={`flex-1 min-w-0 min-h-0 h-screen relative ${selectedUser ? 'flex' : 'hidden md:flex'} bg-bgMain border-l border-white/10 overflow-hidden`}>
+    <div className={`flex-1 min-w-0 min-h-0 h-full relative ${selectedUser ? 'flex' : 'hidden md:flex'} bg-bgMain border-l border-white/10 overflow-hidden`}>
       
 {selectedUser && 
 <div className='w-full h-full min-h-0 flex flex-col overflow-hidden'>
@@ -253,7 +261,8 @@ useEffect(() => {
   </div>
 
   {/* MessageList */}
-  <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 flex flex-col gap-4 justify-end">
+  <div ref={messageListRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain">
+    <div className="min-h-full p-4 sm:p-6 flex flex-col gap-4 justify-end">
     <AnimatePresence>
     {showPicker && (
       <motion.div
@@ -283,6 +292,7 @@ useEffect(() => {
             onImageClick={(img)=>setSelectedImage(img)}
           />
     ))}
+    </div>
   </div>
 
   {/* ChatInput */}

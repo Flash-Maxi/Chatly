@@ -11,7 +11,7 @@ function Home() {
   return (
     <div className="w-screen h-screen flex overflow-hidden bg-bgMain text-textMain">
       <SideBar />
-      <div className="flex-1 min-w-0 min-h-0 h-screen flex flex-col bg-bgMain">
+      <div className="flex-1 min-w-0 min-h-0 h-full flex flex-col bg-bgMain">
         <MessageArea />
       </div>
     </div>
