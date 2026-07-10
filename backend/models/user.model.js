@@ -1,5 +1,20 @@
 import mongoose from "mongoose";
 
+export const SUPPORTED_LANGUAGES = [
+    "English",
+    "Hindi",
+    "Bengali",
+    "Tamil",
+    "Telugu",
+    "Kannada",
+    "Malayalam",
+    "Marathi",
+    "Gujarati",
+    "Punjabi",
+    "Urdu",
+    "Odia",
+];
+
 const userSchema=new mongoose.Schema({
     name:{
         type:String,
@@ -24,6 +39,12 @@ const userSchema=new mongoose.Schema({
     image:{
         type:String,
         default:""
+    },
+    language:{
+        type:String,
+        required:true,
+        default:"English",
+        enum:SUPPORTED_LANGUAGES,
     },
     otp: {
     type: String,

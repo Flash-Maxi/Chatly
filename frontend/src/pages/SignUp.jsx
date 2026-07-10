@@ -5,13 +5,29 @@ import { serverUrl } from '../main'
 import { useDispatch } from 'react-redux'
 import { setUserData } from '../redux/userSlice'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, User, Mail, Lock, MessageSquare } from 'lucide-react'
+import { Eye, EyeOff, User, Mail, Lock, MessageSquare, Languages, ChevronDown } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
+
+const LANGUAGES = [
+    "English",
+    "Hindi",
+    "Bengali",
+    "Tamil",
+    "Telugu",
+    "Kannada",
+    "Malayalam",
+    "Marathi",
+    "Gujarati",
+    "Punjabi",
+    "Urdu",
+    "Odia",
+]
 
 function SignUp() {
     const navigate = useNavigate()
     const [showPassword, setShowPassword] = useState(false)
     const [userName, setUserName] = useState("")
+    const [language, setLanguage] = useState("English")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
@@ -67,7 +83,7 @@ function SignUp() {
         try {
             await axios.post(
                 `${serverUrl}/api/auth/signup`,
-                { userName, email, password },
+                { userName, email, password, language },
                 { withCredentials: true }
             )
             showSuccess("Account created successfully! Please verify your email.")
@@ -75,6 +91,7 @@ function SignUp() {
             setEmail("")
             setPassword("")
             setUserName("")
+            setLanguage("English")
         } catch (error) {
             console.log(error)
             const errorMessage = error?.response?.data?.message || 'Signup failed. Please try again.'
@@ -143,6 +160,32 @@ function SignUp() {
                                     <span className="font-medium">{nameError}</span>
                                 </motion.p>
                             )}
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.225 }}
+                            className="relative"
+                        >
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Languages className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                            </div>
+                            <select
+                                value={language}
+                                onChange={(e) => setLanguage(e.target.value)}
+                                className="w-full pl-12 pr-12 py-4 bg-white/50 dark:bg-gray-700/50 border-2 rounded-xl outline-none transition-all duration-300 text-gray-800 dark:text-white border-gray-200 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 appearance-none cursor-pointer"
+                                aria-label="Preferred Language"
+                            >
+                                {LANGUAGES.map((lang) => (
+                                    <option key={lang} value={lang} className="bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                                        {lang}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none" aria-hidden="true">
+                                <ChevronDown className="h-5 w-5" style={{ color: '#9CA3AF' }} />
+                            </div>
                         </motion.div>
 
                         <motion.div

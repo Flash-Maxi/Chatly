@@ -79,7 +79,7 @@
 //  }
 
 import genToken from "../config/token.js";
-import User from "../models/user.model.js";
+import User, { SUPPORTED_LANGUAGES } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import sendMail from "../config/sendMail.js";
 
@@ -89,7 +89,12 @@ const generateOtp = () => {
 
 export const signUp = async (req, res) => {
   try {
-    const { userName, email, password } = req.body;
+    const { userName, email, password, language } = req.body;
+
+    const preferredLanguage = language || "English";
+    if (!SUPPORTED_LANGUAGES.includes(preferredLanguage)) {
+      return res.status(400).json({ message: "Invalid language selected" });
+    }
 
     const nameRegex = /^[A-Za-z]+$/;
     if (!userName || !nameRegex.test(userName)) {
@@ -120,6 +125,7 @@ export const signUp = async (req, res) => {
       userName,
       email,
       password: hashedPassword,
+      language: preferredLanguage,
       otp,
       otpExpires: Date.now() + 5 * 60 * 1000,
       isVerified: false,
@@ -138,6 +144,7 @@ export const signUp = async (req, res) => {
     return res.status(201).json({
       message: "Signup successful. OTP sent to your email.",
       email: user.email,
+      language: user.language,
     });
   } catch (error) {
     return res.status(500).json({ message: `signup error ${error}` });
