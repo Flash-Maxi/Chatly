@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
 import VerifyOtp from './pages/VerifyOtp'
+import ForgotPassword from './pages/ForgotPassword'
 import getCurrentUser from './customHooks/getCurrentUser'
 import { useDispatch, useSelector } from 'react-redux'
 import Home from './pages/Home'
@@ -53,6 +54,7 @@ function App() {
       <Route path='/login' element={!userData?<Login/>:<Navigate to="/"/>}/>
       <Route path='/signup' element={!userData?<SignUp/>:<Navigate to="/profile"/>}/>
       <Route path='/verify-otp' element={<VerifyOtp/>} />
+      <Route path='/forgot-password' element={!userData ? <ForgotPassword/> : <Navigate to="/"/>} />
       <Route path='/' element={userData?<Home/>:<Navigate to="/login"/>}/>
       <Route path='/profile' element={userData?<Profile/>:<Navigate to="/signup"/>}/>
     </Routes>

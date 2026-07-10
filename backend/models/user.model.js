@@ -52,6 +52,16 @@ const userSchema=new mongoose.Schema({
     otpExpires: {
     type: Date,
     },
+    resetOTP: {
+        type: String,
+    },
+    resetOTPExpires: {
+        type: Date,
+    },
+    otpVerified: {
+        type: Boolean,
+        default: false,
+    },
         otpResendCount: {
             type: Number,
             default: 0,

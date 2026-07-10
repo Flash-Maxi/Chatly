@@ -32,3 +32,27 @@ const sendMail = async (email, otp) => {
 };
 
 export default sendMail;
+
+export const sendPasswordResetMail = async (email, otp) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"Chatly" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Chatly Password Reset OTP",
+      text: `Hello,\n\nYour Chatly password reset OTP is:\n\n${otp}\n\nThis OTP is valid for 5 minutes.\n\nIf you did not request a password reset, please ignore this email.\n\n- Chatly Team`,
+    });
+
+    return true;
+  } catch (error) {
+    console.log("Password reset mail sending error:", error);
+    return false;
+  }
+};

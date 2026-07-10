@@ -81,10 +81,11 @@
 import genToken from "../config/token.js";
 import User, { SUPPORTED_LANGUAGES } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
-import sendMail from "../config/sendMail.js";
+import crypto from "crypto";
+import sendMail, { sendPasswordResetMail } from "../config/sendMail.js";
 
 const generateOtp = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 };
 
 export const signUp = async (req, res) => {
@@ -167,6 +168,12 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({
         message: "User not found",
       });
+    }
+
+    // A password-reset OTP is intentionally kept separate from signup OTPs.
+    // This preserves the existing account-verification flow at this URL.
+    if (user.resetOTP || user.resetOTPExpires || user.otpVerified) {
+      return verifyPasswordResetOtp(req, res, user);
     }
 
     if (user.isVerified) {
@@ -330,5 +337,98 @@ export const resendOtp = async (req, res) => {
   } catch (error) {
     console.log('resendOtp error', error);
     return res.status(500).json({ message: `resend otp error ${error}` });
+  }
+};
+
+const verifyPasswordResetOtp = async (req, res, existingUser = null) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    const user = existingUser || await User.findOne({ email });
+    if (!user || !user.resetOTP || !user.resetOTPExpires) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+
+    if (new Date(user.resetOTPExpires).getTime() < Date.now()) {
+      return res.status(400).json({ message: "OTP has expired. Please request a new OTP." });
+    }
+
+    const isMatch = await bcrypt.compare(String(otp), user.resetOTP);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+
+    user.otpVerified = true;
+    await user.save();
+    return res.status(200).json({ message: "OTP verified successfully." });
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to verify OTP. Please try again." });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const email = req.body.email?.trim().toLowerCase();
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "No account found with this email." });
+
+    const otp = generateOtp();
+    user.resetOTP = await bcrypt.hash(otp, 10);
+    user.resetOTPExpires = new Date(Date.now() + 5 * 60 * 1000);
+    user.otpVerified = false;
+    await user.save();
+
+    const mailSent = await sendPasswordResetMail(user.email, otp);
+    if (!mailSent) {
+      user.resetOTP = undefined;
+      user.resetOTPExpires = undefined;
+      user.otpVerified = false;
+      await user.save();
+      return res.status(500).json({ message: "Failed to send OTP. Please try again." });
+    }
+
+    return res.status(200).json({ message: "OTP has been sent to your email." });
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to send OTP. Please try again." });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const email = req.body.email?.trim().toLowerCase();
+    const { password, confirmPassword } = req.body;
+
+    if (!email || !password || !confirmPassword) {
+      return res.status(400).json({ message: "Email, password, and confirm password are required" });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ message: "password must be at least 6 characters" });
+    }
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user || !user.otpVerified || !user.resetOTPExpires) {
+      return res.status(400).json({ message: "Please verify your OTP before resetting your password." });
+    }
+    if (new Date(user.resetOTPExpires).getTime() < Date.now()) {
+      return res.status(400).json({ message: "OTP has expired. Please request a new OTP." });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    user.resetOTP = undefined;
+    user.resetOTPExpires = undefined;
+    user.otpVerified = false;
+    await user.save();
+
+    return res.status(200).json({ message: "Password updated successfully." });
+  } catch (error) {
+    return res.status(500).json({ message: "Unable to reset password. Please try again." });
   }
 };
