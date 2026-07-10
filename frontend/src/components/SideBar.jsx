@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import dp from "../assets/dp.webp"
 import { IoIosSearch } from "react-icons/io";
@@ -49,6 +49,24 @@ console.log(error)
         }
 
     },[input])
+
+    const sortedUsers = useMemo(() => {
+        if (!otherUsers || otherUsers.length === 0) return otherUsers
+
+        return [...otherUsers].sort((a, b) => {
+            const aUnread = !!(unreadUsers && unreadUsers[String(a._id)])
+            const bUnread = !!(unreadUsers && unreadUsers[String(b._id)])
+            if (aUnread !== bUnread) return aUnread ? -1 : 1
+
+            const aOnline = !!(onlineUsers && onlineUsers.includes(String(a._id)))
+            const bOnline = !!(onlineUsers && onlineUsers.includes(String(b._id)))
+            if (aOnline !== bOnline) return aOnline ? -1 : 1
+
+            const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0
+            const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0
+            return bTime - aTime
+        })
+    }, [otherUsers, unreadUsers, onlineUsers])
 
     const listVariants = {
         hidden: {},
@@ -158,7 +176,7 @@ console.log(error)
             animate="visible"
             className="flex flex-col gap-2 flex-1 overflow-auto"
           >
-                {otherUsers?.map((user)=>(
+                {sortedUsers?.map((user)=>(
                 <motion.div 
                     key={user._id} 
                     variants={itemVariants}
