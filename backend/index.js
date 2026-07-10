@@ -1,5 +1,6 @@
 import express from "express"
 import dotenv from "dotenv"
+import multer from "multer"
 import connectDb from "./config/db.js"
 import authRouter from "./routes/auth.routes.js"
 import cookieParser from "cookie-parser"
@@ -23,7 +24,18 @@ app.use("/api/auth",authRouter)
 app.use("/api/user",userRouter)
 app.use("/api/message",messageRouter)
 
+app.use((err, req, res, next) => {
+    if (err?.message === 'format not supported') {
+        return res.status(400).json({ message: 'format not supported' });
+    }
 
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'File too large (max 5MB)' });
+    }
+
+    console.error(err);
+    return res.status(500).json({ message: 'Something went wrong' });
+});
 
 server.listen(port,()=>{
     connectDb()

@@ -70,6 +70,11 @@ function Profile() {
             console.log(error)
             setSaving(false)
             setErr(error?.response?.data?.message || "Profile update failed")
+            if (backendImage) {
+                setBackendImage(null)
+                setFrontendImage(userData?.image ? getImageUrl(userData.image) : dp)
+                if (image.current) image.current.value = ''
+            }
         }
     }
 

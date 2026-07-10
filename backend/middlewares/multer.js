@@ -24,7 +24,9 @@ export const upload = multer({
     },
     fileFilter: (req, file, cb) => {
         if (!file.mimetype || !file.mimetype.startsWith('image/')) {
-            return cb(new Error('Only image files are allowed'));
+            const error = new Error('format not supported');
+            error.statusCode = 400;
+            return cb(error);
         }
         cb(null, true);
     }

@@ -14,6 +14,7 @@ import { serverUrl } from '../main';
 import getImageUrl from '../utils/getImageUrl';
 import { setMessages, addMessage, markUserUnread } from '../redux/messageSlice';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../context/ToastContext';
 
 // Global socket reference - will be set from App component
 let globalSocket = null;
@@ -36,6 +37,13 @@ let messageInputRef=useRef()
 let emojiButtonRef=useRef()
 let emojiPickerRef=useRef()
 let {messages}=useSelector(state=>state.message)
+const { error: showError } = useToast()
+
+const clearSelectedImage = () => {
+  setFrontendImage(null)
+  setBackendImage(null)
+  if (image.current) image.current.value = ''
+}
 
 const handleClearChat = async () => {
   console.log("Clear Chat clicked", selectedUser?._id)
@@ -50,6 +58,12 @@ const handleClearChat = async () => {
 }
 const handleImage=(e)=>{
   let file=e.target.files[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    showError('format not supported')
+    e.target.value = ''
+    return
+  }
   setBackendImage(file)
   setFrontendImage(URL.createObjectURL(file))
     }
@@ -71,7 +85,9 @@ const handleSendMessage=async (e)=>{
     setFrontendImage(null)
     setBackendImage(null)
   } catch (error) {
-    console.log(error)
+    const message = error?.response?.data?.message || 'Failed to send message'
+    showError(message)
+    clearSelectedImage()
   }
 }
   const onEmojiClick =(emojiData)=>{
