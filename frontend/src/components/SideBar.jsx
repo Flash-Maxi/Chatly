@@ -19,6 +19,8 @@ function SideBar() {
     let [input,setInput]=useState("")
 let dispatch=useDispatch()
 let navigate=useNavigate()
+    const displayName = userData?.name?.trim()
+    const greetingName = displayName || userData?.userName
     const handleLogOut=async ()=>{
         try {
             let result =await axios.get(`${serverUrl}/api/auth/logout`,{withCredentials:true})
@@ -76,7 +78,7 @@ console.log(error)
             transition={{ duration: 0.4, delay: 0.05 }}
             className="mb-4 text-textMain"
           >
-            Hii, <span className="font-semibold">{userData.name || "user"}</span>
+            Hii, <span className="font-semibold">{greetingName}</span>
           </motion.p>
 
           <LanguageSelector />

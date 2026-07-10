@@ -39,8 +39,8 @@ export const editProfile=async (req,res)=>{
             }
         }
 
-        if(name){
-            user.name = name
+        if (typeof name === "string") {
+            user.name = name.trim()
         }
 
         await user.save()
