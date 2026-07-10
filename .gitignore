@@ -10,7 +10,7 @@ yarn-error.log*
 .env.*.local
 
 # Uploads
-/uploads/
+backend/uploads/
 
 # Build outputs
 /dist
