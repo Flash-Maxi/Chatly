@@ -8,6 +8,7 @@ import axios from 'axios';
 import { serverUrl } from '../main';
 import { setUserData } from '../redux/userSlice';
 import { motion, AnimatePresence } from 'framer-motion';
+import CropImageModal from '../components/CropImageModal';
 function Profile() {
     let { userData } = useSelector(state => state.user)
     let dispatch = useDispatch()
@@ -27,10 +28,14 @@ function Profile() {
     };
 
     let [frontendImage, setFrontendImage] = useState(dp)
-    let [backendImage, setBackendImage] = useState(null)
     let image = useRef()
     let [saving, setSaving] = useState(false)
     let [err, setErr] = useState("")
+
+    let [cropModalOpen, setCropModalOpen] = useState(false)
+    let [selectedImageSrc, setSelectedImageSrc] = useState(null)
+    let [selectedImageFile, setSelectedImageFile] = useState(null)
+    let [isCroppingUploading, setIsCroppingUploading] = useState(false)
 
     useEffect(() => {
         if (userData?.image) {
@@ -39,14 +44,79 @@ function Profile() {
             setFrontendImage(dp)
         }
     }, [userData])
+
     const handleImage = (e) => {
         let file = e.target.files[0]
-        setBackendImage(file)
-        setFrontendImage(URL.createObjectURL(file))
+        if (!file) return
+
+        // Validate format: JPG, JPEG, PNG, WebP
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+        if (!validTypes.includes(file.type)) {
+            setErr("Invalid file type. Please select a JPG, JPEG, PNG, or WebP image.")
+            if (image.current) image.current.value = ''
+            return
+        }
+
+        // Validate size: 5 MB
+        if (file.size > 5 * 1024 * 1024) {
+            setErr("File is too large. Please select an image smaller than 5 MB.")
+            if (image.current) image.current.value = ''
+            return
+        }
+
+        setErr("") // Clear existing errors
+        const objectUrl = URL.createObjectURL(file)
+        setSelectedImageSrc(objectUrl)
+        setSelectedImageFile(file)
+        setCropModalOpen(true)
+    }
+
+    const handleCloseModal = () => {
+        setCropModalOpen(false)
+        if (selectedImageSrc) {
+            URL.revokeObjectURL(selectedImageSrc)
+            setSelectedImageSrc(null)
+        }
+        setSelectedImageFile(null)
+        if (image.current) {
+            image.current.value = ''
+        }
+    }
+
+    const handleCropSave = async (croppedBlob) => {
+        setIsCroppingUploading(true)
+        setErr("")
+        try {
+            const originalName = selectedImageFile ? selectedImageFile.name : 'profile.jpg'
+            let extension = 'jpg'
+            if (selectedImageFile?.type) {
+                const mimeToExt = {
+                    'image/jpeg': 'jpg',
+                    'image/jpg': 'jpg',
+                    'image/png': 'png',
+                    'image/webp': 'webp'
+                }
+                extension = mimeToExt[selectedImageFile.type] || 'jpg'
+            }
+            const baseName = originalName.substring(0, originalName.lastIndexOf('.')) || 'profile'
+            const filename = `cropped-${baseName}.${extension}`
+
+            let formData = new FormData()
+            formData.append("name", name)
+            formData.append("image", croppedBlob, filename)
+
+            let result = await axios.put(`${serverUrl}/api/user/profile`, formData, { withCredentials: true })
+            dispatch(setUserData(result.data))
+            handleCloseModal()
+        } catch (error) {
+            console.log(error)
+            setErr(error?.response?.data?.message || "Profile picture upload failed")
+        } finally {
+            setIsCroppingUploading(false)
+        }
     }
 
     const handleProfile = async (e) => {
-
         e.preventDefault()
         setSaving(true)
         const nameRegex = /^[A-Za-z ]+$/
@@ -56,12 +126,8 @@ function Profile() {
             return
         }
         try {
-
             let formData = new FormData()
             formData.append("name", name)
-            if (backendImage) {
-                formData.append("image", backendImage)
-            }
             let result = await axios.put(`${serverUrl}/api/user/profile`, formData, { withCredentials: true })
             setSaving(false)
             dispatch(setUserData(result.data))
@@ -70,11 +136,6 @@ function Profile() {
             console.log(error)
             setSaving(false)
             setErr(error?.response?.data?.message || "Profile update failed")
-            if (backendImage) {
-                setBackendImage(null)
-                setFrontendImage(userData?.image ? getImageUrl(userData.image) : dp)
-                if (image.current) image.current.value = ''
-            }
         }
     }
 
@@ -224,6 +285,18 @@ function Profile() {
                     </motion.button>
                 </form>
             </motion.div>
+
+            <AnimatePresence>
+                {cropModalOpen && (
+                    <CropImageModal
+                        isOpen={cropModalOpen}
+                        onClose={handleCloseModal}
+                        imageSrc={selectedImageSrc}
+                        onSave={handleCropSave}
+                        isUploading={isCroppingUploading}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     )
 }

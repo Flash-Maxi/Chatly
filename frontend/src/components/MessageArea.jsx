@@ -360,7 +360,7 @@ useEffect(() => {
     transition={{ duration: 0.5 }}
     className='relative z-10 bg-gradient-to-r from-textMain to-textMain/60 bg-clip-text text-transparent font-bold text-3xl sm:text-4xl text-center px-4'
   >
-    Welcome to Chatily
+    Welcome to Chatly
   </motion.h1>
   <motion.span
     initial={{ opacity: 0, y: 12 }}
