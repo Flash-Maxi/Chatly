@@ -14,6 +14,10 @@ message:{
     type:String,
     default:""
 },
+senderLanguage: {
+    type: String,
+    default: "English"
+},
 image:{
     type:String,
     default:""

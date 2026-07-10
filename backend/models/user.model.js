@@ -1,19 +1,7 @@
 import mongoose from "mongoose";
+import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from "../config/languages.js";
 
-export const SUPPORTED_LANGUAGES = [
-    "English",
-    "Hindi",
-    "Bengali",
-    "Tamil",
-    "Telugu",
-    "Kannada",
-    "Malayalam",
-    "Marathi",
-    "Gujarati",
-    "Punjabi",
-    "Urdu",
-    "Odia",
-];
+export { SUPPORTED_LANGUAGES } from "../config/languages.js";
 
 const userSchema=new mongoose.Schema({
     name:{
@@ -43,7 +31,7 @@ const userSchema=new mongoose.Schema({
     language:{
         type:String,
         required:true,
-        default:"English",
+        default:DEFAULT_LANGUAGE,
         enum:SUPPORTED_LANGUAGES,
     },
     otp: {

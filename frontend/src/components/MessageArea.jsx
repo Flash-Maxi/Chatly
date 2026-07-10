@@ -15,6 +15,7 @@ import getImageUrl from '../utils/getImageUrl';
 import { setMessages, addMessage, markUserUnread } from '../redux/messageSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../context/ToastContext';
+import { isRomanHindi } from '../utils/isRomanHindi';
 
 // Global socket reference - will be set from App component
 let globalSocket = null;
@@ -36,8 +37,9 @@ let menuRef=useRef()
 let messageInputRef=useRef()
 let emojiButtonRef=useRef()
 let emojiPickerRef=useRef()
+let hinglishWarningConversations=useRef(new Set())
 let {messages}=useSelector(state=>state.message)
-const { error: showError } = useToast()
+const { error: showError, warning: showWarning } = useToast()
 
 const clearSelectedImage = () => {
   setFrontendImage(null)
@@ -72,6 +74,20 @@ const handleSendMessage=async (e)=>{
   if(input.length==0 && backendImage==null){
     return 
   }
+
+  const conversationId = String(selectedUser?._id || '')
+  if (
+    conversationId
+    && !hinglishWarningConversations.current.has(conversationId)
+    && isRomanHindi(input, userData?.language)
+  ) {
+    showWarning(
+      'For better translation accuracy, write Hindi in Devanagari script (हिन्दी). Messages written in Roman Hindi (Hinglish) may not translate correctly.',
+      5000,
+    )
+    hinglishWarningConversations.current.add(conversationId)
+  }
+
   try {
     let formData=new FormData()
     formData.append("message",input)
@@ -172,10 +188,10 @@ useEffect(() => {
 }, [showPicker])
  
   return (
-    <div className={`flex-1 min-w-0 h-screen relative ${selectedUser ? 'flex' : 'hidden md:flex'} bg-bgMain border-l border-white/10 overflow-hidden`}>
+    <div className={`flex-1 min-w-0 min-h-0 h-screen relative ${selectedUser ? 'flex' : 'hidden md:flex'} bg-bgMain border-l border-white/10 overflow-hidden`}>
       
 {selectedUser && 
-<div className='w-full h-full flex flex-col overflow-hidden'>
+<div className='w-full h-full min-h-0 flex flex-col overflow-hidden'>
   {/* ChatHeader */}
   <div className="shrink-0 h-[75px] flex items-center justify-between px-4 sm:px-6 border-b border-white/10 bg-bgMain/80 backdrop-blur-xl z-20">
     {/* Left */}
@@ -237,7 +253,7 @@ useEffect(() => {
   </div>
 
   {/* MessageList */}
-  <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 justify-end">
+  <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 flex flex-col gap-4 justify-end">
     <AnimatePresence>
     {showPicker && (
       <motion.div
@@ -256,7 +272,16 @@ useEffect(() => {
     {messages && messages.map((mess) => (
       mess.sender === userData._id
         ? <SenderMessage key={mess._id} image={mess.image} message={mess.message} onImageClick={(img)=>setSelectedImage(img)} />
-        : <ReceiverMessage key={mess._id} image={mess.image} message={mess.message} onImageClick={(img)=>setSelectedImage(img)} />
+        : <ReceiverMessage
+            key={mess._id}
+            messageId={mess._id}
+            image={mess.image}
+            message={mess.message}
+            senderLanguage={mess.senderLanguage}
+            translatedText={mess.translatedText}
+            isTranslated={mess.isTranslated}
+            onImageClick={(img)=>setSelectedImage(img)}
+          />
     ))}
   </div>
 

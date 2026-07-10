@@ -1,16 +1,16 @@
 export const LANGUAGES = [
     "English",
     "Hindi",
-    "Bengali",
-    "Tamil",
-    "Telugu",
-    "Kannada",
-    "Malayalam",
-    "Marathi",
-    "Gujarati",
-    "Punjabi",
-    "Urdu",
-    "Odia",
+    "Spanish",
+    "French",
+    "German",
+    "Japanese",
+    "Korean",
+    "Chinese (Simplified)",
+    "Arabic",
+    "Portuguese",
+    "Russian",
+    "Italian",
 ]
 
 export const DEFAULT_LANGUAGE = "English"

@@ -15,6 +15,15 @@ const messageSlice = createSlice({
          state.messages.push(action.payload);
       },
 
+      setMessageTranslation: (state, action) => {
+         const { messageId, translatedText } = action.payload;
+         const message = state.messages.find((item) => String(item._id) === String(messageId));
+         if (message) {
+            message.translatedText = translatedText;
+            message.isTranslated = true;
+         }
+      },
+
       markUserUnread: (state, action) => {
          state.unreadUsers[String(action.payload)] = true;
       },
@@ -25,5 +34,5 @@ const messageSlice = createSlice({
    }
 });
 
-export const { setMessages, addMessage, markUserUnread, clearUserUnread } = messageSlice.actions;
+export const { setMessages, addMessage, setMessageTranslation, markUserUnread, clearUserUnread } = messageSlice.actions;
 export default messageSlice.reducer;
