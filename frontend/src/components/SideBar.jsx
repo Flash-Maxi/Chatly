@@ -68,7 +68,7 @@ console.log(error)
             transition={{ duration: 0.4 }}
             className="text-2xl font-extrabold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent mb-6 tracking-tight"
           >
-            chatly
+            Chatly
           </motion.h1>
 
           {/* User greeting */}

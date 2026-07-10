@@ -106,7 +106,7 @@ function SignUp() {
                             <MessageSquare className="w-10 h-10 text-white" />
                         </motion.div>
                         <h1 className="text-4xl font-bold text-white mb-2">
-                            Join Chatily
+                            Join Chatly
                         </h1>
                         <p className="text-blue-100 text-lg">Create your account today</p>
                     </div>
