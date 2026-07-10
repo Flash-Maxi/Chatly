@@ -1,5 +1,5 @@
 import uploadOnCloudinary from "../config/cloudinary.js"
-import User from "../models/user.model.js"
+import User, { SUPPORTED_LANGUAGES } from "../models/user.model.js"
 import Message from "../models/message.model.js"
 import mongoose from "mongoose"
 
@@ -112,6 +112,34 @@ export const getOtherUsers=async (req,res)=>{
         return res.status(200).json(usersWithRecency)
     } catch (error) {
         return res.status(500).json({message:`get other users error ${error}`})
+    }
+}
+
+export const updateLanguage = async (req, res) => {
+    try {
+        const { language } = req.body
+
+        if (!language) {
+            return res.status(400).json({ message: "Language is required" })
+        }
+
+        if (!SUPPORTED_LANGUAGES.includes(language)) {
+            return res.status(400).json({ message: "Invalid language selected" })
+        }
+
+        const user = await User.findById(req.userId)
+
+        if (!user) {
+            return res.status(400).json({ message: "user not found" })
+        }
+
+        user.language = language
+        await user.save()
+
+        const updatedUser = await User.findById(req.userId).select("-password")
+        return res.status(200).json(updatedUser)
+    } catch (error) {
+        return res.status(500).json({ message: `update language error ${error}` })
     }
 }
 

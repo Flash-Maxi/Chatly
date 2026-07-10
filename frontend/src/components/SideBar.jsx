@@ -11,6 +11,7 @@ import { setOtherUsers, setSearchData, setSelectedUser, setUserData } from '../r
 import { clearUserUnread } from '../redux/messageSlice';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import LanguageSelector from './LanguageSelector';
 function SideBar() {
     let {userData,otherUsers,selectedUser,onlineUsers,searchData} = useSelector(state=>state.user)
     let { unreadUsers } = useSelector(state => state.message)
@@ -77,6 +78,8 @@ console.log(error)
           >
             Hii, <span className="font-semibold">{userData.name || "user"}</span>
           </motion.p>
+
+          <LanguageSelector />
 
           {/* Search */}
           <div className="relative mb-6">

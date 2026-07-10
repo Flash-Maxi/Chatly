@@ -7,27 +7,13 @@ import { setUserData } from '../redux/userSlice'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, User, Mail, Lock, MessageSquare, Languages, ChevronDown } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
-
-const LANGUAGES = [
-    "English",
-    "Hindi",
-    "Bengali",
-    "Tamil",
-    "Telugu",
-    "Kannada",
-    "Malayalam",
-    "Marathi",
-    "Gujarati",
-    "Punjabi",
-    "Urdu",
-    "Odia",
-]
+import { DEFAULT_LANGUAGE, LANGUAGES } from '../constants/languages'
 
 function SignUp() {
     const navigate = useNavigate()
     const [showPassword, setShowPassword] = useState(false)
     const [userName, setUserName] = useState("")
-    const [language, setLanguage] = useState("English")
+    const [language, setLanguage] = useState(DEFAULT_LANGUAGE)
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
@@ -91,7 +77,7 @@ function SignUp() {
             setEmail("")
             setPassword("")
             setUserName("")
-            setLanguage("English")
+            setLanguage(DEFAULT_LANGUAGE)
         } catch (error) {
             console.log(error)
             const errorMessage = error?.response?.data?.message || 'Signup failed. Please try again.'
