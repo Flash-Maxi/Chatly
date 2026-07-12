@@ -26,6 +26,7 @@ function App() {
 
   useEffect(() => {
     if (userData && !socketio) {
+      console.log("serverUrl =", JSON.stringify(serverUrl));
       socketio = io(`${serverUrl}`, {
         query: {
           userId: userData?._id
@@ -34,6 +35,7 @@ function App() {
       });
       // Make socket available to MessageArea component
       setGlobalSocket(socketio);
+      
       socketio.on("getOnlineUsers", (users) => {
         dispatch(setOnlineUsers(users));
       });
