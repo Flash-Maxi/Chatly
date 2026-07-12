@@ -1,27 +1,40 @@
+import dotenv from "dotenv";
+dotenv.config();
 import nodemailer from "nodemailer";
+
+
+console.log("========== SMTP ENV ==========");
+console.log("HOST:", process.env.EMAIL_HOST);
+console.log("PORT:", process.env.EMAIL_PORT);
+console.log("USER:", process.env.EMAIL_USER);
+console.log("PASS EXISTS:", !!process.env.EMAIL_PASS);
+console.log("==============================");
+
+// Single shared Brevo transporter — created once, reused everywhere
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: Number(process.env.EMAIL_PORT),
+  secure: false, // STARTTLS on port 587
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+console.log("Transporter options:", transporter.options);
+
+// Verify SMTP connection on startup (full error output)
+(async () => {
+  try {
+    await transporter.verify();
+    console.log("✅ Brevo SMTP Connected");
+  } catch (err) {
+    console.error("SMTP VERIFY ERROR:", err);
+  }
+})();
 
 const sendMail = async (email, otp) => {
   try {
-    // const transporter = nodemailer.createTransport({
-    //   service: "gmail",
-    //   auth: {
-    //     user: process.env.EMAIL_USER,
-    //     pass: process.env.EMAIL_PASS,
-    //   },
-    // });
-
-    const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    requireTLS: true,
-
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
-
     await transporter.sendMail({
       from: `"Chatly" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -47,14 +60,6 @@ export default sendMail;
 
 export const sendPasswordResetMail = async (email, otp) => {
   try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
     await transporter.sendMail({
       from: `"Chatly" <${process.env.EMAIL_USER}>`,
       to: email,
