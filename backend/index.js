@@ -14,12 +14,17 @@ const port=process.env.PORT || 5000
 
 
 app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:5174", "https://chatapp-9w3o.onrender.com"],
+    origin: ["http://localhost:5173", "http://localhost:5174",  "https://chatly-st7c.onrender.com"],
     credentials: true
 }))
 app.use(express.json())
 app.use(cookieParser())
 app.use('/uploads', express.static('uploads'))
+
+app.get('/', (req, res) => {
+    res.status(200).json({ status: 'running', message: 'Server is running' })
+})
+
 app.use("/api/auth",authRouter)
 app.use("/api/user",userRouter)
 app.use("/api/message",messageRouter)
