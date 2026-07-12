@@ -9,7 +9,7 @@ import { ToastProvider } from './context/ToastContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 
 
-export const serverUrl = "https://chatly-st7c.onrender.com"
+export const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 // Create root idempotently to avoid "createRoot called twice" warnings
 const container = document.getElementById('root')
