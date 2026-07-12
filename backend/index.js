@@ -1,10 +1,10 @@
 import express from "express"
 import dotenv from "dotenv"
 import multer from "multer"
+dotenv.config()
 import connectDb from "./config/db.js"
 import authRouter from "./routes/auth.routes.js"
 import cookieParser from "cookie-parser"
-dotenv.config()
 import cors from "cors"
 import userRouter from "./routes/user.routes.js"
 import messageRouter from "./routes/message.routes.js"
@@ -42,8 +42,16 @@ app.use((err, req, res, next) => {
     return res.status(500).json({ message: 'Something went wrong' });
 });
 
-server.listen(port,()=>{
-    connectDb()
-    console.log("server started")
+const startServer = async () => {
+  try {
+    await connectDb();
 
-})
+    server.listen(port, () => {
+      console.log(`✅ Server running on port ${port}`);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+startServer();
