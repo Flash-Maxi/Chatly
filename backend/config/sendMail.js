@@ -1,43 +1,46 @@
-import dotenv from "dotenv";
-dotenv.config();
+import axios from "axios";
 
-import nodemailer from "nodemailer";
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
-console.log("========== SMTP ENV ==========");
-console.log("HOST:", process.env.EMAIL_HOST);
-console.log("PORT:", process.env.EMAIL_PORT);
-console.log("USER:", process.env.EMAIL_USER);
-console.log("FROM:", process.env.EMAIL_FROM);
-console.log("PASS EXISTS:", !!process.env.EMAIL_PASS);
-console.log("==============================");
+/**
+ * Sends a transactional email via Brevo v3 REST API.
+ */
+const sendBrevoEmail = async ({ to, subject, htmlContent, textContent }) => {
+  const payload = {
+    sender: {
+      name: "Chatly",
+      email: process.env.EMAIL_FROM,
+    },
+    to: [{ email: to }],
+    subject,
+  };
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: false,          // STARTTLS on 587
-  requireTLS: true,
-  family: 4,              // Prefer IPv4
+  if (htmlContent) payload.htmlContent = htmlContent;
+  if (textContent) payload.textContent = textContent;
 
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
+  const response = await axios.post(BREVO_API_URL, payload, {
+    headers: {
+      "api-key": process.env.BREVO_API_KEY,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+  });
 
-  connectionTimeout: 20000,
-  greetingTimeout: 20000,
-  socketTimeout: 20000,
-});
+  return response;
+};
 
+/**
+ * Sends an OTP verification email.
+ */
 const sendMail = async (email, otp) => {
   try {
     console.log("Sending verification mail to:", email);
 
-    const info = await transporter.sendMail({
-      from: `"Chatly" <${process.env.EMAIL_FROM}>`,
+    const response = await sendBrevoEmail({
       to: email,
       subject: "Verify your Chatly account",
-      html: `
-        <div style="font-family: Arial,sans-serif">
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif">
           <h2>Chatly Email Verification</h2>
           <p>Your OTP is:</p>
           <h1>${otp}</h1>
@@ -46,33 +49,35 @@ const sendMail = async (email, otp) => {
       `,
     });
 
-    console.log("Mail sent:", info.messageId);
+    console.log("Mail sent:", response.data);
     return true;
   } catch (err) {
     console.error("Verification mail error:");
-    console.error(err);
+    console.error(err.response ? err.response.data : err.message);
     return false;
   }
 };
 
 export default sendMail;
 
+/**
+ * Sends a password reset OTP email.
+ */
 export const sendPasswordResetMail = async (email, otp) => {
   try {
     console.log("Sending password reset mail to:", email);
 
-    const info = await transporter.sendMail({
-      from: `"Chatly" <${process.env.EMAIL_FROM}>`,
+    const response = await sendBrevoEmail({
       to: email,
       subject: "Chatly Password Reset OTP",
-      text: `Your Chatly password reset OTP is ${otp}. It expires in 5 minutes.`,
+      textContent: `Your Chatly password reset OTP is ${otp}. It expires in 5 minutes.`,
     });
 
-    console.log("Password reset mail sent:", info.messageId);
+    console.log("Password reset mail sent:", response.data);
     return true;
   } catch (err) {
     console.error("Password reset mail error:");
-    console.error(err);
+    console.error(err.response ? err.response.data : err.message);
     return false;
   }
 };
