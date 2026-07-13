@@ -1,69 +1,56 @@
 import dotenv from "dotenv";
 dotenv.config();
-import nodemailer from "nodemailer";
 
+import nodemailer from "nodemailer";
 
 console.log("========== SMTP ENV ==========");
 console.log("HOST:", process.env.EMAIL_HOST);
 console.log("PORT:", process.env.EMAIL_PORT);
 console.log("USER:", process.env.EMAIL_USER);
+console.log("FROM:", process.env.EMAIL_FROM);
 console.log("PASS EXISTS:", !!process.env.EMAIL_PASS);
 console.log("==============================");
 
-console.log({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  user: process.env.EMAIL_USER,
-});
-
-// Single shared Brevo transporter — created once, reused everywhere
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: Number(process.env.EMAIL_PORT),
-  secure: false, // STARTTLS on port 587
+  secure: false,          // STARTTLS on 587
+  requireTLS: true,
+  family: 4,              // Prefer IPv4
+
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 20000,
 });
-
-console.log("Transporter options:", transporter.options);
-
-// Verify SMTP connection on startup (full error output)
-// Commented out: transporter.verify() can delay or block startup on cloud platforms
-// if the SMTP server is temporarily unreachable. Email is verified on actual send instead.
-// (async () => {
-//   try {
-//     await transporter.verify();
-//     console.log("✅ Brevo SMTP Connected");
-//   } catch (err) {
-//     console.error("SMTP VERIFY ERROR:", err);
-//   }
-// })();
 
 const sendMail = async (email, otp) => {
   try {
-    console.log({
-      EMAIL_FROM: process.env.EMAIL_FROM,
-      EMAIL_USER: process.env.EMAIL_USER,
-    });
-    await transporter.sendMail({
+    console.log("Sending verification mail to:", email);
+
+    const info = await transporter.sendMail({
       from: `"Chatly" <${process.env.EMAIL_FROM}>`,
       to: email,
       subject: "Verify your Chatly account",
       html: `
-        <div style="font-family: Arial, sans-serif;">
+        <div style="font-family: Arial,sans-serif">
           <h2>Chatly Email Verification</h2>
           <p>Your OTP is:</p>
           <h1>${otp}</h1>
-          <p>This OTP will expire in 5 minutes.</p>
+          <p>This OTP expires in 5 minutes.</p>
         </div>
       `,
     });
 
+    console.log("Mail sent:", info.messageId);
     return true;
-  } catch (error) {
-    console.log("Mail sending error:", error);
+  } catch (err) {
+    console.error("Verification mail error:");
+    console.error(err);
     return false;
   }
 };
@@ -72,20 +59,20 @@ export default sendMail;
 
 export const sendPasswordResetMail = async (email, otp) => {
   try {
-    console.log({
-      EMAIL_FROM: process.env.EMAIL_FROM,
-      EMAIL_USER: process.env.EMAIL_USER,
-    });
-    await transporter.sendMail({
+    console.log("Sending password reset mail to:", email);
+
+    const info = await transporter.sendMail({
       from: `"Chatly" <${process.env.EMAIL_FROM}>`,
       to: email,
       subject: "Chatly Password Reset OTP",
-      text: `Hello,\n\nYour Chatly password reset OTP is:\n\n${otp}\n\nThis OTP is valid for 5 minutes.\n\nIf you did not request a password reset, please ignore this email.\n\n- Chatly Team`,
+      text: `Your Chatly password reset OTP is ${otp}. It expires in 5 minutes.`,
     });
 
+    console.log("Password reset mail sent:", info.messageId);
     return true;
-  } catch (error) {
-    console.log("Password reset mail sending error:", error);
+  } catch (err) {
+    console.error("Password reset mail error:");
+    console.error(err);
     return false;
   }
 };
