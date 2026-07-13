@@ -30,14 +30,16 @@ const transporter = nodemailer.createTransport({
 console.log("Transporter options:", transporter.options);
 
 // Verify SMTP connection on startup (full error output)
-(async () => {
-  try {
-    await transporter.verify();
-    console.log("✅ Brevo SMTP Connected");
-  } catch (err) {
-    console.error("SMTP VERIFY ERROR:", err);
-  }
-})();
+// Commented out: transporter.verify() can delay or block startup on cloud platforms
+// if the SMTP server is temporarily unreachable. Email is verified on actual send instead.
+// (async () => {
+//   try {
+//     await transporter.verify();
+//     console.log("✅ Brevo SMTP Connected");
+//   } catch (err) {
+//     console.error("SMTP VERIFY ERROR:", err);
+//   }
+// })();
 
 const sendMail = async (email, otp) => {
   try {
