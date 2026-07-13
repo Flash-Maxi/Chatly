@@ -35,8 +35,12 @@ console.log("Transporter options:", transporter.options);
 
 const sendMail = async (email, otp) => {
   try {
+    console.log({
+      EMAIL_FROM: process.env.EMAIL_FROM,
+      EMAIL_USER: process.env.EMAIL_USER,
+    });
     await transporter.sendMail({
-      from: `"Chatly" <${process.env.EMAIL_USER}>`,
+      from: `"Chatly" <${process.env.EMAIL_FROM}>`,
       to: email,
       subject: "Verify your Chatly account",
       html: `
@@ -60,8 +64,12 @@ export default sendMail;
 
 export const sendPasswordResetMail = async (email, otp) => {
   try {
+    console.log({
+      EMAIL_FROM: process.env.EMAIL_FROM,
+      EMAIL_USER: process.env.EMAIL_USER,
+    });
     await transporter.sendMail({
-      from: `"Chatly" <${process.env.EMAIL_USER}>`,
+      from: `"Chatly" <${process.env.EMAIL_FROM}>`,
       to: email,
       subject: "Chatly Password Reset OTP",
       text: `Hello,\n\nYour Chatly password reset OTP is:\n\n${otp}\n\nThis OTP is valid for 5 minutes.\n\nIf you did not request a password reset, please ignore this email.\n\n- Chatly Team`,

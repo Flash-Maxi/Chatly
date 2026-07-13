@@ -8,7 +8,7 @@ import { motion } from 'framer-motion'
 import { Mail, Key, ShieldCheck } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 
-function VerifyOtp(){
+function VerifyOtp() {
     const navigate = useNavigate()
     const location = useLocation()
     const dispatch = useDispatch()
@@ -61,9 +61,9 @@ function VerifyOtp(){
         return () => clearInterval(t)
     }, [cooldown])
 
-    useEffect(()=>{
-        if(prefillEmail) setEmail(prefillEmail)
-    },[prefillEmail])
+    useEffect(() => {
+        if (prefillEmail) setEmail(prefillEmail)
+    }, [prefillEmail])
 
     const validateInputs = () => {
         let isValid = true
@@ -90,24 +90,24 @@ function VerifyOtp(){
         return isValid
     }
 
-    const handleVerify = async (e) =>{
+    const handleVerify = async (e) => {
         e.preventDefault()
-        
+
         if (!validateInputs()) {
             return
         }
 
         setLoading(true)
-        try{
+        try {
             const res = await axios.post(`${serverUrl}/api/auth/verify-otp`, { email, otp }, { withCredentials: true })
             // Backend sets cookie and returns user
             dispatch(setUserData(res.data.user))
             showSuccess("Account verified successfully! Welcome to Chatily!")
             navigate('/')
-        }catch(error){
+        } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Verification failed'
             showError(errorMessage)
-        }finally{
+        } finally {
             setLoading(false)
         }
     }
@@ -123,7 +123,7 @@ function VerifyOtp(){
         }
 
         setResendLoading(true)
-        try{
+        try {
             const res = await axios.post(`${serverUrl}/api/auth/resend-otp`, { email })
             showSuccess(res.data.message || 'OTP resent successfully')
             // start cooldown (matches server minimum interval of 60s)
@@ -134,10 +134,10 @@ function VerifyOtp(){
                 console.warn('could not persist cooldown', err)
             }
             setCooldown(60)
-        }catch(error){
+        } catch (error) {
             const errorMessage = error?.response?.data?.message || 'Failed to resend OTP'
             showError(errorMessage)
-        }finally{
+        } finally {
             setResendLoading(false)
         }
     }
@@ -184,11 +184,10 @@ function VerifyOtp(){
                                     setEmail(e.target.value)
                                     if (emailError) setEmailError("")
                                 }}
-                                className={`w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-gray-700/50 border-2 rounded-xl outline-none transition-all duration-300 text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                                    emailError 
-                                        ? 'border-red-400 dark:border-red-500 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/30' 
+                                className={`w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-gray-700/50 border-2 rounded-xl outline-none transition-all duration-300 text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${emailError
+                                        ? 'border-red-400 dark:border-red-500 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/30'
                                         : 'border-gray-200 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30'
-                                }`}
+                                    }`}
                                 aria-label="Email address"
                                 aria-invalid={!!emailError}
                             />
@@ -223,11 +222,10 @@ function VerifyOtp(){
                                     if (otpError) setOtpError("")
                                 }}
                                 maxLength={6}
-                                className={`w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-gray-700/50 border-2 rounded-xl outline-none transition-all duration-300 text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 tracking-widest text-center text-2xl ${
-                                    otpError 
-                                        ? 'border-red-400 dark:border-red-500 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/30' 
+                                className={`w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-gray-700/50 border-2 rounded-xl outline-none transition-all duration-300 text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 tracking-widest text-center text-2xl ${otpError
+                                        ? 'border-red-400 dark:border-red-500 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/30'
                                         : 'border-gray-200 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30'
-                                }`}
+                                    }`}
                                 aria-label="OTP code"
                                 aria-invalid={!!otpError}
                             />
@@ -257,7 +255,7 @@ function VerifyOtp(){
                                     <>
                                         <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 7.938l3-2.647z"></path>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
                                         Verifying...
                                     </>
@@ -281,7 +279,7 @@ function VerifyOtp(){
                                     <>
                                         <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 7.938l3-2.647z"></path>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
                                         Resending...
                                     </>
