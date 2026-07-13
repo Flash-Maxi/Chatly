@@ -31,6 +31,12 @@ const transporter = nodemailer.createTransport({
 const sendMail = async (email, otp) => {
   try {
     console.log("Sending verification mail to:", email);
+    console.log({
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT,
+      user: process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM,
+    });
 
     const info = await transporter.sendMail({
       from: `"Chatly" <${process.env.EMAIL_FROM}>`,
@@ -60,6 +66,12 @@ export default sendMail;
 export const sendPasswordResetMail = async (email, otp) => {
   try {
     console.log("Sending password reset mail to:", email);
+    console.log({
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT,
+      user: process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM,
+    });
 
     const info = await transporter.sendMail({
       from: `"Chatly" <${process.env.EMAIL_FROM}>`,
