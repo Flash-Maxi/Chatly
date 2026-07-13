@@ -17,19 +17,14 @@ console.log({
 });
 
 // Single shared Brevo transporter — created once, reused everywhere
-// family: 4 forces IPv4 to avoid IPv6 timeout issues on cloud platforms
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
-  port: 587,
-  secure: false,
-  requireTLS: true,
-
+  port: Number(process.env.EMAIL_PORT),
+  secure: false, // STARTTLS on port 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-
-  family: 4,
 });
 
 console.log("Transporter options:", transporter.options);
