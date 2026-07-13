@@ -1,64 +1,11 @@
 import { createSlice } from "@reduxjs/toolkit"
 
-const getStorageKey=(userId)=>`chatily_chat_order_${userId}`
-
-const saveOrder=(userId, users)=>{
-   if (!userId || !users) return
-   try {
-      const key = getStorageKey(userId)
-      const order = users.map((user)=>String(user?._id)).filter(Boolean)
-      localStorage.setItem(key, JSON.stringify(order))
-   } catch (error) {
-      console.log(error)
-   }
-}
-
-const loadOrder=(userId)=>{
-   if (!userId) return null
-   try {
-      const key = getStorageKey(userId)
-      const stored = localStorage.getItem(key)
-      if (!stored) return null
-      const parsed = JSON.parse(stored)
-      return Array.isArray(parsed) ? parsed : null
-   } catch (error) {
-      return null
-   }
-}
-
-const applyStoredOrder=(users, storedOrder)=>{
-   if (!storedOrder || storedOrder.length === 0) return users
-
-   const orderedUsers = []
-   const remainingUsers = []
-   const storedSet = new Set(storedOrder)
-   const userMap = new Map()
-
-   users.forEach((user) => {
-      const userId = String(user?._id)
-      userMap.set(userId, user)
-   })
-
-   storedOrder.forEach((userId) => {
-      const user = userMap.get(String(userId))
-      if (user) orderedUsers.push(user)
-   })
-
-   users.forEach((user) => {
-      const userId = String(user?._id)
-      if (!storedSet.has(userId)) remainingUsers.push(user)
-   })
-
-   return [...orderedUsers, ...remainingUsers]
-}
-
 const userSlice=createSlice({
    name:"user",
    initialState:{
    userData:null,
    otherUsers:[],
     selectedUser:null,
-    // socket:null, // REMOVE socket from Redux state
     onlineUsers:null,
       searchData:null,
       unreadUsers: {}
@@ -87,29 +34,42 @@ const userSlice=createSlice({
          }
       },
     setOtherUsers:(state,action)=>{
-      const storedOrder = loadOrder(state.userData?._id)
-      const orderedUsers = applyStoredOrder(action.payload, storedOrder)
-      state.otherUsers = orderedUsers
-      saveOrder(state.userData?._id, orderedUsers)
+      // Server already returns users sorted by lastMessageAt descending.
+      // Store directly — no localStorage reordering needed.
+      state.otherUsers = action.payload || []
        },
-       moveUserToTop:(state,action)=>{
-         const userId = String(action.payload);
+
+       // updateUserLastMessage: called whenever a message is sent or received.
+       // Sets lastMessageAt on the user object and re-sorts the list by
+       // lastMessageAt descending so the sidebar always reflects recency.
+       updateUserLastMessage:(state,action)=>{
+         const { userId, lastMessageAt } = action.payload
+         const id = String(userId)
 
          const index = state.otherUsers.findIndex(
-           user => String(user._id) === userId
-         );
+           user => String(user._id) === id
+         )
 
-         if (index <= 0) return;
+         if (index === -1) return  // unknown user — nothing to do
 
-         const [user] = state.otherUsers.splice(index, 1);
-         state.otherUsers.unshift(user);
-         saveOrder(state.userData?._id, state.otherUsers)
+         // Update the timestamp on the user object in-place
+         state.otherUsers[index] = {
+           ...state.otherUsers[index],
+           lastMessageAt
+         }
+
+         // Re-sort by lastMessageAt descending
+         state.otherUsers.sort((a, b) => {
+           const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0
+           const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0
+           return bTime - aTime
+         })
        },
+
        setSelectedUser:(state,action)=>{
          state.selectedUser=action.payload
           }
           ,
-          // setSocket removed
              setOnlineUsers:(state,action)=>{
               state.onlineUsers=action.payload
                },
@@ -119,5 +79,16 @@ const userSlice=createSlice({
    }
 })
 
-export const {setUserData, setOtherUsers,setSelectedUser,setOnlineUsers,setSearchData,setUnreadUsers,markUnreadUser,clearUnreadUser,moveUserToTop}=userSlice.actions
+export const {
+  setUserData,
+  setOtherUsers,
+  setSelectedUser,
+  setOnlineUsers,
+  setSearchData,
+  setUnreadUsers,
+  markUnreadUser,
+  clearUnreadUser,
+  updateUserLastMessage
+} = userSlice.actions
+
 export default userSlice.reducer

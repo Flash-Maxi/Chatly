@@ -100,13 +100,12 @@ export const getOtherUsers=async (req,res)=>{
             return userObject
         })
 
+        // Sort by lastMessageAt descending — most recent conversation first.
+        // Users with no messages (lastMessageAt = null) sink to the bottom.
         usersWithRecency.sort((a, b) => {
-            const hasA = !!a.lastMessageAt
-            const hasB = !!b.lastMessageAt
-
-            if (hasA === hasB) return 0
-            if (hasA) return -1
-            return 1
+            const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0
+            const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0
+            return bTime - aTime
         })
 
         return res.status(200).json(usersWithRecency)

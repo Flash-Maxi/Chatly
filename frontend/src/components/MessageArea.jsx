@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io";
 import dp from "../assets/dp.webp"
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedUser, moveUserToTop } from '../redux/userSlice';
+import { setSelectedUser, updateUserLastMessage } from '../redux/userSlice';
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { FaImages, FaDownload } from "react-icons/fa6";
 import { RiSendPlane2Fill } from "react-icons/ri";
@@ -97,7 +97,7 @@ const handleSendMessage=async (e)=>{
     }
     let result=await axios.post(`${serverUrl}/api/message/send/${selectedUser._id}`,formData,{withCredentials:true})
     dispatch(addMessage(result.data))
-    dispatch(moveUserToTop(selectedUser._id))
+    dispatch(updateUserLastMessage({ userId: selectedUser._id, lastMessageAt: result.data.createdAt }))
     setInput("")
     setFrontendImage(null)
     setBackendImage(null)
@@ -140,7 +140,7 @@ useEffect(() => {
     } else {
       dispatch(markUserUnread(senderId));
     }
-    dispatch(moveUserToTop(senderId));
+    dispatch(updateUserLastMessage({ userId: senderId, lastMessageAt: mess.createdAt }));
   };
 
   globalSocket.on('newMessage', handleNewMessage);
