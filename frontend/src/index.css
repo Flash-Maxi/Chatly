@@ -1,13 +1,35 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* Hide scrollbar for Chrome, Safari and Opera */
+
+/* ── Scrollbar: hidden globally ── */
 ::-webkit-scrollbar {
-    display: none;
-  }
-  
-  /* Hide scrollbar for IE, Edge and Firefox */
-  body {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
+  display: none;
+}
+body {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+/* ── Mobile viewport fix ──
+   Prevents the browser chrome (address bar) from causing layout shift.
+   100dvh collapses when the browser UI appears; fallback for older browsers. */
+html, body, #root {
+  height: 100%;
+}
+
+/* ── Prevent iOS rubber-band scrolling on the page root ── */
+body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Textarea auto-grow: no native resize handle ── */
+textarea {
+  resize: none;
+}
+
+/* ── Prevent tap highlight flash on mobile buttons ── */
+button, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}

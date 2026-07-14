@@ -8,6 +8,7 @@ const userSlice=createSlice({
     selectedUser:null,
     onlineUsers:null,
       searchData:null,
+      // unreadUsers: { [userId]: count } — number of unread messages per user
       unreadUsers: {}
    },  
    reducers:{
@@ -40,10 +41,10 @@ const userSlice=createSlice({
        },
 
        // updateUserLastMessage: called whenever a message is sent or received.
-       // Sets lastMessageAt on the user object and re-sorts the list by
-       // lastMessageAt descending so the sidebar always reflects recency.
+       // Sets lastMessageAt + optional lastMessageText on the user object
+       // and re-sorts the list by lastMessageAt descending.
        updateUserLastMessage:(state,action)=>{
-         const { userId, lastMessageAt } = action.payload
+         const { userId, lastMessageAt, lastMessageText } = action.payload
          const id = String(userId)
 
          const index = state.otherUsers.findIndex(
@@ -52,10 +53,11 @@ const userSlice=createSlice({
 
          if (index === -1) return  // unknown user — nothing to do
 
-         // Update the timestamp on the user object in-place
+         // Update the timestamp (and preview text when provided) in-place
          state.otherUsers[index] = {
            ...state.otherUsers[index],
-           lastMessageAt
+           lastMessageAt,
+           ...(lastMessageText !== undefined && { lastMessageText })
          }
 
          // Re-sort by lastMessageAt descending

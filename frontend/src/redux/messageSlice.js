@@ -25,11 +25,14 @@ const messageSlice = createSlice({
       },
 
       markUserUnread: (state, action) => {
-         state.unreadUsers[String(action.payload)] = true;
+         // Increment unread count for the sender
+         const id = String(action.payload)
+         state.unreadUsers[id] = (state.unreadUsers[id] || 0) + 1
       },
 
       clearUserUnread: (state, action) => {
-         state.unreadUsers[String(action.payload)] = false;
+         // Reset to 0 when user opens the conversation
+         state.unreadUsers[String(action.payload)] = 0
       }
    }
 });
