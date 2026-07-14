@@ -98,7 +98,7 @@ function SideBar() {
                     transition={{ duration: 0.4, delay: 0.05 }}
                     className="text-xs md:text-sm text-textSub mb-2"
                 >
-                    Hey, <span className="font-semibold text-textMain">{greetingName}</span>
+                    Hi, <span className="font-semibold text-textMain">{greetingName}</span>
                 </motion.p>
 
                 {/* Language selector — compact on mobile */}
