@@ -40,7 +40,7 @@ function HighlightedText({ text, query, matchRanges, activeGlobalIndex, classNam
       <mark
         key={`match-${i}`}
         data-match-id={isActive ? 'active' : `match-${globalIndex}`}
-        className={isActive ? 'search-highlight-active' : 'search-highlight'}
+        className={isActive ? 'search-highlight active' : 'search-highlight'}
       >
         {text.slice(start, end)}
       </mark>

@@ -6,15 +6,20 @@
 ::-webkit-scrollbar {
   display: none;
 }
+
 body {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 /* ── Mobile viewport fix ──
    Prevents the browser chrome (address bar) from causing layout shift.
    100dvh collapses when the browser UI appears; fallback for older browsers. */
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
 }
 
@@ -30,24 +35,21 @@ textarea {
 }
 
 /* ── Prevent tap highlight flash on mobile buttons ── */
-button, [role="button"] {
+button,
+[role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
 
 /* ── In-chat message search highlights ── */
-mark.search-highlight {
-  background-color: rgba(99, 102, 241, 0.25);  /* primary/25 */
-  color: inherit;
-  border-radius: 3px;
-  padding: 0 2px;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+.search-highlight {
+  background: rgba(1, 2, 55, 0.28);
+  color: #ffffff;
+  padding: 1px 3px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
-mark.search-highlight-active {
-  background-color: rgba(99, 102, 241, 0.65);  /* primary/65 */
-  color: #fff;
-  border-radius: 3px;
-  padding: 0 2px;
-  box-shadow: 0 0 0 1.5px rgba(99, 102, 241, 0.9);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+.search-highlight.active {
+  background: rgba(1, 2, 55, 0.66);
+  box-shadow: 0 0 8px rgba(1, 2, 55, 0.66);
 }
