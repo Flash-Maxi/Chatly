@@ -7,8 +7,9 @@ import { Languages } from 'lucide-react'
 import { setMessageTranslation } from '../redux/messageSlice'
 import { translateMessage } from '../services/translationService'
 import { useToast } from '../context/ToastContext'
+import HighlightedText from './HighlightedText'
 
-function ReceiverMessage({ image, message, senderLanguage, messageId, translatedText, isTranslated, onImageClick }) {
+function ReceiverMessage({ image, message, senderLanguage, messageId, translatedText, isTranslated, onImageClick, searchQuery, matchRanges, activeGlobalIndex }) {
   const scroll = useRef()
   const { selectedUser, userData } = useSelector(state => state.user)
   const dispatch = useDispatch()
@@ -44,6 +45,21 @@ function ReceiverMessage({ image, message, senderLanguage, messageId, translated
     }
   }
 
+  // Render original message text — with highlights when search is active
+  // NOTE: translatedText, senderLanguage, usernames and timestamps are never searched
+  const renderText = (textClassName) =>
+    searchQuery && matchRanges
+      ? (
+        <HighlightedText
+          text={message}
+          query={searchQuery}
+          matchRanges={matchRanges}
+          activeGlobalIndex={activeGlobalIndex}
+          className={textClassName}
+        />
+      )
+      : <span className={textClassName}>{message}</span>
+
   return (
     <Motion.div
       initial={{ opacity: 0, y: 10, scale: 0.97 }}
@@ -73,7 +89,7 @@ function ReceiverMessage({ image, message, senderLanguage, messageId, translated
               onLoad={handleImageScroll}
               onClick={() => onImageClick && onImageClick(getImageUrl(image))}
             />
-            <p className="text-textMain text-sm md:text-[15px] leading-relaxed break-words">{message}</p>
+            {renderText("text-textMain text-sm md:text-[15px] leading-relaxed break-words")}
           </div>
         ) : (
           <>
@@ -86,7 +102,7 @@ function ReceiverMessage({ image, message, senderLanguage, messageId, translated
                 onClick={() => onImageClick && onImageClick(getImageUrl(image))}
               />
             )}
-            {message && <p className="text-textMain text-sm md:text-[15px] leading-relaxed break-words">{message}</p>}
+            {message && renderText("text-textMain text-sm md:text-[15px] leading-relaxed break-words")}
           </>
         )}
 
@@ -112,7 +128,7 @@ function ReceiverMessage({ image, message, senderLanguage, messageId, translated
           </div>
         )}
 
-        {/* Translation result */}
+        {/* Translation result — translatedText is intentionally NOT highlighted */}
         <AnimatePresence>
           {isTranslated && translatedText && (
             <Motion.div
@@ -132,3 +148,4 @@ function ReceiverMessage({ image, message, senderLanguage, messageId, translated
 }
 
 export default ReceiverMessage
+

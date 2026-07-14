@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io"
+import { IoSearch, IoClose } from "react-icons/io5"
+import { MdKeyboardArrowUp, MdKeyboardArrowDown } from "react-icons/md"
 import dp from "../assets/dp.webp"
 import { useDispatch, useSelector } from 'react-redux'
 import { setSelectedUser, updateUserLastMessage } from '../redux/userSlice'
@@ -17,6 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '../context/ToastContext'
 import { isRomanHindi } from '../utils/isRomanHindi'
 import ConfirmModal from './ConfirmModal'
+import useMessageSearch from '../customHooks/useMessageSearch'
 
 // Global socket reference - will be set from App component
 let globalSocket = null
@@ -43,6 +46,18 @@ function MessageArea() {
   const { messages } = useSelector(state => state.message)
   const { error: showError, warning: showWarning } = useToast()
 
+  // ─── Search state ─────────────────────────────────────────────────
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeMatchIdx, setActiveMatchIdx] = useState(0)
+  const searchInputRef = useRef()
+  const searchBarRef = useRef()
+
+  // Compute all matches across all messages (memoized, O(N×L))
+  const { matchesPerMessage, totalCount } = useMessageSearch(messages, searchQuery)
+
+  // ─────────────────────────────────────────────────────────────────
+
   // ─── Send-lock: prevents duplicate sends on rapid Enter/click ───
   // useRef is the source of truth so the guard works synchronously
   // inside the async function (no stale-closure issues with useState).
@@ -63,6 +78,40 @@ function MessageArea() {
     setBackendImage(null)
     if (imageRef.current) imageRef.current.value = ''
   }
+
+  // ─── Search handlers ───────────────────────────────────────────────
+  const handleSearchOpen = () => {
+    setSearchOpen(true)
+    setMenuOpen(false) // close the ⋮ menu if open
+    // Focus is applied by the useEffect that watches searchOpen
+  }
+
+  const handleSearchClose = () => {
+    setSearchOpen(false)
+    setSearchQuery('')
+    setActiveMatchIdx(0)
+  }
+
+  const handleNext = () => {
+    if (totalCount === 0) return
+    setActiveMatchIdx(prev => (prev + 1) % totalCount)
+  }
+
+  const handlePrev = () => {
+    if (totalCount === 0) return
+    setActiveMatchIdx(prev => (prev - 1 + totalCount) % totalCount)
+  }
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      handleSearchClose()
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (e.shiftKey) handlePrev()
+      else handleNext()
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────
 
   // Auto-grow textarea
   const handleInputChange = (e) => {
@@ -127,7 +176,7 @@ function MessageArea() {
     const cooldownTimer = setTimeout(() => {
       isSendingRef.current = false
       setIsSending(false)
-    }, 3000)
+    }, 1500)
     // ────────────────────────────────────────────────────────────────
 
     const conversationId = String(selectedUser?._id || '')
@@ -257,12 +306,48 @@ function MessageArea() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showPicker])
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages change (but not when search is active — 
+  // the search navigation controls scroll in that case)
   useEffect(() => {
+    if (searchOpen) return  // let search nav handle scrolling when search is active
     const messageList = messageListRef.current
     if (!messageList) return
     messageList.scrollTo({ top: messageList.scrollHeight, behavior: 'smooth' })
-  }, [messages.length, selectedUser?._id])
+  }, [messages.length, selectedUser?._id, searchOpen])
+
+  // ─── Search: auto-focus input when search panel opens ────────────
+  useEffect(() => {
+    if (searchOpen && searchInputRef.current) {
+      searchInputRef.current.focus()
+    }
+  }, [searchOpen])
+
+  // ─── Search: reset active index when query or messages change ────
+  useEffect(() => {
+    setActiveMatchIdx(0)
+  }, [searchQuery, selectedUser?._id])
+
+  // ─── Search: scroll active match into view ────────────────────────
+  useEffect(() => {
+    if (!searchOpen || totalCount === 0) return
+    // Small RAF delay ensures the DOM has re-rendered highlights before we scroll
+    const id = requestAnimationFrame(() => {
+      const el = document.querySelector('[data-match-id="active"]')
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    return () => cancelAnimationFrame(id)
+  }, [activeMatchIdx, totalCount, searchOpen])
+
+  // ─── Search: close on ESC anywhere in the document ───────────────
+  useEffect(() => {
+    if (!searchOpen) return
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') handleSearchClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchOpen])
 
   return (
     <div className="flex-1 min-w-0 h-full relative flex flex-col bg-bgMain overflow-hidden">
@@ -310,51 +395,169 @@ function MessageArea() {
               </div>
             </div>
 
-            {/* Right — options menu */}
-            <div className="relative shrink-0" ref={menuRef}>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.92 }}
-                aria-label="Chat options"
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="text-textMain text-xl md:text-2xl w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-full hover:bg-bgSurface/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                ⋮
-              </motion.button>
+            {/* Right — search bar (when open) OR search icon + options menu */}
+            <div className="flex items-center gap-1 shrink-0">
 
+              {/* ── Animated Search Bar ── */}
               <AnimatePresence>
-                {menuOpen && (
+                {searchOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: -6, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -6, scale: 0.96 }}
-                    transition={{ duration: 0.18 }}
-                    className="absolute right-0 mt-2 w-36 bg-bgSurface/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+                    ref={searchBarRef}
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex items-center gap-1 md:gap-1.5 bg-bgSurface/80 border border-white/10 rounded-xl px-2 py-1 overflow-hidden"
                   >
-                    <button
-                      onClick={() => {
-                        // Open the confirmation modal; do NOT call handleClearChat directly.
-                        // The actual delete only happens when the user confirms inside the modal.
-                        setMenuOpen(false)
-                        setShowConfirmClear(true)
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-red-500/10 text-red-400 transition-colors"
+                    {/* Search input */}
+                    <input
+                      id="chat-search-input"
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="Search messages…"
+                      aria-label="Search messages"
+                      className="w-32 sm:w-44 md:w-52 bg-transparent text-textMain text-sm placeholder-textSub outline-none py-0.5"
+                    />
+
+                    {/* Match counter */}
+                    <span
+                      aria-live="polite"
+                      className="text-xs font-medium shrink-0 tabular-nums min-w-[36px] text-center"
+                      style={{ color: searchQuery.trim() && totalCount === 0 ? '#f87171' : '#6366f1' }}
                     >
-                      Clear Chat
-                    </button>
+                      {searchQuery.trim()
+                        ? totalCount === 0
+                          ? '0/0'
+                          : `${activeMatchIdx + 1}/${totalCount}`
+                        : ''}
+                    </span>
+
+                    {/* Prev button */}
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
+                      onClick={handlePrev}
+                      disabled={totalCount === 0}
+                      aria-label="Previous match"
+                      tabIndex={0}
+                      className="p-0.5 rounded hover:bg-white/10 text-textSub hover:text-textMain disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                    >
+                      <MdKeyboardArrowUp className="w-4 h-4" />
+                    </motion.button>
+
+                    {/* Next button */}
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
+                      onClick={handleNext}
+                      disabled={totalCount === 0}
+                      aria-label="Next match"
+                      tabIndex={0}
+                      className="p-0.5 rounded hover:bg-white/10 text-textSub hover:text-textMain disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                    >
+                      <MdKeyboardArrowDown className="w-4 h-4" />
+                    </motion.button>
+
+                    {/* Close button */}
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
+                      onClick={handleSearchClose}
+                      aria-label="Close search"
+                      tabIndex={0}
+                      className="p-0.5 rounded hover:bg-white/10 text-textSub hover:text-textMain transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                    >
+                      <IoClose className="w-4 h-4" />
+                    </motion.button>
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* ── Search icon (hidden when search bar is open) ── */}
+              {!searchOpen && (
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.92 }}
+                  aria-label="Search messages"
+                  onClick={handleSearchOpen}
+                  className="text-textSub hover:text-textMain text-lg md:text-xl w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-full hover:bg-bgSurface/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+                >
+                  <IoSearch />
+                </motion.button>
+              )}
+
+              {/* ── Options menu ── */}
+              <div className="relative" ref={menuRef}>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.92 }}
+                  aria-label="Chat options"
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className="text-textMain text-xl md:text-2xl w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-full hover:bg-bgSurface/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  ⋮
+                </motion.button>
+
+                <AnimatePresence>
+                  {menuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                      transition={{ duration: 0.18 }}
+                      className="absolute right-0 mt-2 w-36 bg-bgSurface/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+                    >
+                      <button
+                        onClick={() => {
+                          // Open the confirmation modal; do NOT call handleClearChat directly.
+                          // The actual delete only happens when the user confirms inside the modal.
+                          setMenuOpen(false)
+                          setShowConfirmClear(true)
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-red-500/10 text-red-400 transition-colors"
+                      >
+                        Clear Chat
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
 
           {/* ── Message List (independently scrollable) ── */}
           <div ref={messageListRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain">
             <div className="min-h-full px-3 py-3 md:p-6 flex flex-col gap-3 md:gap-4 justify-end">
-              {messages && messages.map((mess) => (
-                mess.sender === userData._id
-                  ? <SenderMessage key={mess._id} image={mess.image} message={mess.message} onImageClick={(img) => setSelectedImage(img)} />
-                  : <ReceiverMessage
+
+              {/* ── "No messages found" banner (search active, zero results) ── */}
+              {searchOpen && searchQuery.trim() && totalCount === 0 && (
+                <div className="flex justify-center py-2">
+                  <span className="text-xs text-textSub bg-bgSurface/60 border border-white/10 rounded-full px-3 py-1">
+                    No messages found
+                  </span>
+                </div>
+              )}
+
+              {messages && messages.map((mess, msgIndex) => {
+                // Per-message search data (empty when search is closed or no query)
+                const msgMatchRanges = (searchOpen && searchQuery.trim())
+                  ? (matchesPerMessage.get(msgIndex) ?? null)
+                  : null
+
+                return mess.sender === userData._id
+                  ? (
+                    <SenderMessage
+                      key={mess._id}
+                      image={mess.image}
+                      message={mess.message}
+                      onImageClick={(img) => setSelectedImage(img)}
+                      searchQuery={searchOpen ? searchQuery : ''}
+                      matchRanges={msgMatchRanges}
+                      activeGlobalIndex={activeMatchIdx}
+                    />
+                  )
+                  : (
+                    <ReceiverMessage
                       key={mess._id}
                       messageId={mess._id}
                       image={mess.image}
@@ -363,8 +566,12 @@ function MessageArea() {
                       translatedText={mess.translatedText}
                       isTranslated={mess.isTranslated}
                       onImageClick={(img) => setSelectedImage(img)}
+                      searchQuery={searchOpen ? searchQuery : ''}
+                      matchRanges={msgMatchRanges}
+                      activeGlobalIndex={activeMatchIdx}
                     />
-              ))}
+                  )
+              })}
             </div>
           </div>
 

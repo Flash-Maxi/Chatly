@@ -3,8 +3,9 @@ import dp from "../assets/dp.webp"
 import { useSelector } from 'react-redux'
 import getImageUrl from '../utils/getImageUrl'
 import { motion } from 'framer-motion'
+import HighlightedText from './HighlightedText'
 
-function SenderMessage({ image, message, onImageClick }) {
+function SenderMessage({ image, message, onImageClick, searchQuery, matchRanges, activeGlobalIndex }) {
   const scroll = useRef()
   const { userData } = useSelector(state => state.user)
 
@@ -15,6 +16,20 @@ function SenderMessage({ image, message, onImageClick }) {
   const handleImageScroll = () => {
     scroll?.current?.scrollIntoView({ behavior: "smooth" })
   }
+
+  // Render text with highlights when a search is active, plain otherwise
+  const renderText = (textClassName) =>
+    searchQuery && matchRanges
+      ? (
+        <HighlightedText
+          text={message}
+          query={searchQuery}
+          matchRanges={matchRanges}
+          activeGlobalIndex={activeGlobalIndex}
+          className={textClassName}
+        />
+      )
+      : <span className={textClassName}>{message}</span>
 
   return (
     <motion.div
@@ -45,7 +60,7 @@ function SenderMessage({ image, message, onImageClick }) {
               onLoad={handleImageScroll}
               onClick={() => onImageClick && onImageClick(getImageUrl(image))}
             />
-            <p className="text-white text-sm md:text-[15px] leading-relaxed break-words">{message}</p>
+            {renderText("text-white text-sm md:text-[15px] leading-relaxed break-words")}
           </div>
         ) : (
           <>
@@ -58,7 +73,7 @@ function SenderMessage({ image, message, onImageClick }) {
                 onClick={() => onImageClick && onImageClick(getImageUrl(image))}
               />
             )}
-            {message && <p className="text-white text-sm md:text-[15px] leading-relaxed break-words">{message}</p>}
+            {message && renderText("text-white text-sm md:text-[15px] leading-relaxed break-words")}
           </>
         )}
       </div>
