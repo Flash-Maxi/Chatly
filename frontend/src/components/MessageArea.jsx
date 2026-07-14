@@ -16,6 +16,7 @@ import { setMessages, addMessage, markUserUnread } from '../redux/messageSlice'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useToast } from '../context/ToastContext'
 import { isRomanHindi } from '../utils/isRomanHindi'
+import ConfirmModal from './ConfirmModal'
 
 // Global socket reference - will be set from App component
 let globalSocket = null
@@ -49,6 +50,14 @@ function MessageArea() {
   const isSendingRef = useRef(false)
   const [isSending, setIsSending] = useState(false)
 
+  // ─── Clear-chat confirmation modal ───────────────────────────────
+  // showConfirmClear  → controls modal visibility
+  // isClearingChat    → true while the DELETE request is in-flight;
+  //                     keeps the modal open and buttons disabled so the
+  //                     user cannot close it or retry until the API responds.
+  const [showConfirmClear, setShowConfirmClear] = useState(false)
+  const [isClearingChat,   setIsClearingChat]   = useState(false)
+
   const clearSelectedImage = () => {
     setFrontendImage(null)
     setBackendImage(null)
@@ -65,13 +74,23 @@ function MessageArea() {
   }
 
   const handleClearChat = async () => {
+    // Guard: don't allow a second call while the first is in-flight.
+    if (isClearingChat) return
+    setIsClearingChat(true)
     try {
       const res = await axios.delete(`${serverUrl}/api/message/clear/${selectedUser._id}`, { withCredentials: true })
       console.log('clear conversation response', res.data)
       dispatch(setMessages([]))
+      // Success: close both the modal and the options menu.
+      setShowConfirmClear(false)
       setMenuOpen(false)
     } catch (error) {
       console.log('clear conversation error', error?.response?.data || error)
+      // Failure: show error toast but keep the modal open so the user can retry.
+      const msg = error?.response?.data?.message || 'Failed to clear chat. Please try again.'
+      showError(msg)
+    } finally {
+      setIsClearingChat(false)
     }
   }
 
@@ -313,7 +332,12 @@ function MessageArea() {
                     className="absolute right-0 mt-2 w-36 bg-bgSurface/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
                   >
                     <button
-                      onClick={handleClearChat}
+                      onClick={() => {
+                        // Open the confirmation modal; do NOT call handleClearChat directly.
+                        // The actual delete only happens when the user confirms inside the modal.
+                        setMenuOpen(false)
+                        setShowConfirmClear(true)
+                      }}
                       className="w-full text-left px-4 py-2.5 text-sm hover:bg-red-500/10 text-red-400 transition-colors"
                     >
                       Clear Chat
@@ -553,6 +577,21 @@ function MessageArea() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ─── Clear Chat confirmation modal ─── */}
+      {/* Rendered at root level so it sits above all other content.
+          onConfirm calls the existing handleClearChat — no business logic changed.
+          onCancel simply hides the modal; nothing is deleted. */}
+      <ConfirmModal
+        isOpen={showConfirmClear}
+        onConfirm={handleClearChat}
+        onCancel={() => { if (!isClearingChat) setShowConfirmClear(false) }}
+        title="Clear Chat"
+        message="Are you sure you want to clear this chat? This action cannot be undone."
+        confirmLabel="Yes, Clear"
+        cancelLabel="No"
+        isLoading={isClearingChat}
+      />
     </div>
   )
 }

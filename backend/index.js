@@ -11,9 +11,16 @@ import cors from "cors"
 import userRouter from "./routes/user.routes.js"
 import messageRouter from "./routes/message.routes.js"
 import { app, server } from "./socket/socket.js"
+import { generalLimiter } from "./middlewares/rateLimiter.js"
 
 const port = process.env.PORT || 3000
 
+
+// trust proxy: required on Render (and most cloud platforms) so that
+// express-rate-limit reads the real client IP from X-Forwarded-For
+// instead of the internal load-balancer IP (which would make all users
+// share one rate-limit bucket).
+app.set('trust proxy', 1)
 
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174", "https://chatly-sandy.vercel.app"],
@@ -22,6 +29,12 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 app.use('/uploads', express.static('uploads'))
+
+// generalLimiter: catch-all safety net (300 req / 15 min per IP).
+// Applied AFTER CORS so preflight OPTIONS requests are unaffected,
+// and BEFORE route registration so every HTTP endpoint is covered.
+// Socket.IO uses a separate HTTP upgrade path and is NOT affected.
+app.use(generalLimiter)
 
 app.get('/', (req, res) => {
   res.status(200).json({ status: 'running', message: 'Server is running' })
