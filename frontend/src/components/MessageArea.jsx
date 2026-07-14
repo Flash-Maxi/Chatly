@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { IoIosArrowRoundBack } from "react-icons/io"
 import dp from "../assets/dp.webp"
 import { useDispatch, useSelector } from 'react-redux'
@@ -42,6 +42,13 @@ function MessageArea() {
   const { messages } = useSelector(state => state.message)
   const { error: showError, warning: showWarning } = useToast()
 
+  // ─── Send-lock: prevents duplicate sends on rapid Enter/click ───
+  // useRef is the source of truth so the guard works synchronously
+  // inside the async function (no stale-closure issues with useState).
+  // isSending state is only used to re-render the disabled button UI.
+  const isSendingRef = useRef(false)
+  const [isSending, setIsSending] = useState(false)
+
   const clearSelectedImage = () => {
     setFrontendImage(null)
     setBackendImage(null)
@@ -80,9 +87,29 @@ function MessageArea() {
     setFrontendImage(URL.createObjectURL(file))
   }
 
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = useCallback(async (e) => {
     e.preventDefault()
+
+    // ── Lock guard ──────────────────────────────────────────────────
+    // isSendingRef.current is the synchronous gate that stops a second
+    // call from entering while the first await is still in-flight.
+    // This covers both rapid Enter presses and rapid button clicks.
+    if (isSendingRef.current) return
     if (input.length === 0 && backendImage === null) return
+
+    // Acquire the lock immediately — before the first await — so no
+    // concurrent call can slip through between ticks.
+    isSendingRef.current = true
+    setIsSending(true) // triggers re-render → button becomes disabled
+
+    // Guarantee the lock is released after 1.5 s even if something
+    // unexpected happens (e.g. network hangs without throwing).
+    // The explicit unlock in the catch block fires sooner on errors.
+    const cooldownTimer = setTimeout(() => {
+      isSendingRef.current = false
+      setIsSending(false)
+    }, 1500)
+    // ────────────────────────────────────────────────────────────────
 
     const conversationId = String(selectedUser?._id || '')
     if (
@@ -110,6 +137,7 @@ function MessageArea() {
         lastMessageAt: result.data.createdAt,
         lastMessageText: input || '📷 Photo'
       }))
+      // ── Clear input only after a confirmed successful send ──
       setInput("")
       setFrontendImage(null)
       setBackendImage(null)
@@ -121,8 +149,13 @@ function MessageArea() {
       const message = error?.response?.data?.message || 'Failed to send message'
       showError(message)
       clearSelectedImage()
+      // ── On failure: unlock immediately so the user can retry ──
+      clearTimeout(cooldownTimer)
+      isSendingRef.current = false
+      setIsSending(false)
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input, backendImage, selectedUser, userData, dispatch, showError, showWarning])
 
   const onEmojiClick = (emojiData) => {
     setInput(prev => prev + emojiData.emoji)
@@ -389,9 +422,15 @@ function MessageArea() {
                 onChange={handleInputChange}
                 value={input}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  // Shift+Enter → insert newline (default textarea behaviour)
+                  if (e.key === 'Enter' && e.shiftKey) return
+                  if (e.key === 'Enter') {
                     e.preventDefault()
-                    handleSendMessage(e)
+                    // isSendingRef.current is checked synchronously here
+                    // *and* again inside handleSendMessage for safety.
+                    if (!isSendingRef.current) {
+                      handleSendMessage(e)
+                    }
                   }
                 }}
                 style={{ height: 'auto' }}
@@ -416,15 +455,26 @@ function MessageArea() {
                   <motion.button
                     type="submit"
                     aria-label="Send message"
+                    // disabled prop prevents the form's onSubmit from firing
+                    // via button click while the lock is active, and lets
+                    // the browser/assistive tech know it is not interactive.
+                    disabled={isSending}
                     initial={{ opacity: 0, scale: 0.6 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.6 }}
-                    whileHover={{ scale: 1.12 }}
-                    whileTap={{ scale: 0.9 }}
+                    // Suppress hover/tap animations while disabled
+                    whileHover={isSending ? {} : { scale: 1.12 }}
+                    whileTap={isSending ? {} : { scale: 0.9 }}
                     transition={{ duration: 0.15 }}
-                    className="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full shrink-0 pb-0.5"
+                    className={
+                      `focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full shrink-0 pb-0.5 transition-opacity ${
+                        isSending
+                          ? 'opacity-40 cursor-not-allowed'
+                          : 'cursor-pointer opacity-100'
+                      }`
+                    }
                   >
-                    <RiSendPlane2Fill className="w-5 h-5 md:w-[22px] md:h-[22px] text-primary hover:opacity-80" />
+                    <RiSendPlane2Fill className="w-5 h-5 md:w-[22px] md:h-[22px] text-primary" />
                   </motion.button>
                 )}
               </AnimatePresence>
