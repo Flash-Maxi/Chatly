@@ -81,13 +81,24 @@ export const getOtherUsers=async (req,res)=>{
             {
                 $group: {
                     _id: "$conversationPartner",
-                    lastMessageAt: { $first: "$createdAt" }
+                    lastMessageAt:   { $first: "$createdAt" },
+                    lastMessageText: { $first: "$message"   },
+                    lastMessageImage:{ $first: "$image"     }
                 }
             }
         ])
 
+        // Build a lookup map: userId → { lastMessageAt, lastMessageText }
+        // If the most recent message had no text (image-only), fall back to
+        // "📷 Photo" — consistent with the real-time updateUserLastMessage action.
         const latestMessageByUser = new Map(
-            latestMessageMap.map((item) => [item._id.toString(), item.lastMessageAt])
+            latestMessageMap.map((item) => [
+                item._id.toString(),
+                {
+                    lastMessageAt:   item.lastMessageAt,
+                    lastMessageText: item.lastMessageText || (item.lastMessageImage ? "📷 Photo" : "")
+                }
+            ])
         )
 
         let users=await User.find({
@@ -96,12 +107,16 @@ export const getOtherUsers=async (req,res)=>{
 
         const usersWithRecency = users.map((user) => {
             const userObject = user.toObject()
-            userObject.lastMessageAt = latestMessageByUser.get(user._id.toString()) || null
+            const recency = latestMessageByUser.get(user._id.toString())
+            userObject.lastMessageAt   = recency?.lastMessageAt   ?? null
+            userObject.lastMessageText = recency?.lastMessageText ?? null
             return userObject
         })
 
         // Sort by lastMessageAt descending — most recent conversation first.
         // Users with no messages (lastMessageAt = null) sink to the bottom.
+        // The frontend applies the full 3-tier sort (conversations → online → offline)
+        // once it receives this list and knows who is currently online.
         usersWithRecency.sort((a, b) => {
             const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0
             const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0
