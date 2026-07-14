@@ -108,7 +108,7 @@ function MessageArea() {
     const cooldownTimer = setTimeout(() => {
       isSendingRef.current = false
       setIsSending(false)
-    }, 1500)
+    }, 3000)
     // ────────────────────────────────────────────────────────────────
 
     const conversationId = String(selectedUser?._id || '')
