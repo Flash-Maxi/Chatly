@@ -44,7 +44,7 @@ function MessageArea() {
   const messageListRef = useRef()
   const hinglishWarningConversations = useRef(new Set())
   const { messages } = useSelector(state => state.message)
-  const { error: showError, warning: showWarning } = useToast()
+  const { error: showError, warning: showWarning, success: showSuccess } = useToast()
 
   // ─── Search state ─────────────────────────────────────────────────
   const [searchOpen, setSearchOpen] = useState(false)
@@ -72,6 +72,7 @@ function MessageArea() {
   //                     user cannot close it or retry until the API responds.
   const [showConfirmClear, setShowConfirmClear] = useState(false)
   const [isClearingChat,   setIsClearingChat]   = useState(false)
+
 
   const clearSelectedImage = () => {
     setFrontendImage(null)
@@ -784,6 +785,7 @@ function MessageArea() {
           </motion.div>
         )}
       </AnimatePresence>
+
 
       {/* ─── Clear Chat confirmation modal ─── */}
       {/* Rendered at root level so it sits above all other content.
