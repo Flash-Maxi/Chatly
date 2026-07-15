@@ -83,6 +83,7 @@ import User, { SUPPORTED_LANGUAGES } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import sendMail, { sendPasswordResetMail } from "../config/sendMail.js";
+import validatePassword from "../utils/passwordValidator.js";
 
 const generateOtp = () => {
   return crypto.randomInt(100000, 1000000).toString();
@@ -112,9 +113,11 @@ export const signUp = async (req, res) => {
       return res.status(400).json({ message: "email already exist" });
     }
 
-    if (password.length < 6) {
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.valid) {
       return res.status(400).json({
-        message: "password must be at least 6 characters",
+        success: false,
+        message: pwCheck.message,
       });
     }
 
@@ -406,8 +409,9 @@ export const resetPassword = async (req, res) => {
     if (!email || !password || !confirmPassword) {
       return res.status(400).json({ message: "Email, password, and confirm password are required" });
     }
-    if (password.length < 6) {
-      return res.status(400).json({ message: "password must be at least 6 characters" });
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.valid) {
+      return res.status(400).json({ success: false, message: pwCheck.message });
     }
     if (password !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match" });

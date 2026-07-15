@@ -1,5 +1,5 @@
 import axios from 'axios'
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { serverUrl } from '../main'
 import { useDispatch } from 'react-redux'
@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 import { Eye, EyeOff, User, Mail, Lock, MessageSquare, Languages, ChevronDown } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { DEFAULT_LANGUAGE, LANGUAGES } from '../constants/languages'
+import PasswordStrengthMeter, { REQUIREMENTS, getStrength } from '../components/PasswordStrengthMeter'
 
 function SignUp() {
     const navigate = useNavigate()
@@ -22,6 +23,12 @@ function SignUp() {
     const [passwordError, setPasswordError] = useState("")
     const dispatch = useDispatch()
     const { error: showError, success: showSuccess } = useToast()
+
+    // Derived: is every password requirement satisfied?
+    const isPasswordStrong = useMemo(
+        () => password.length > 0 && REQUIREMENTS.every((req) => req.test(password)),
+        [password]
+    )
 
     const validateInputs = () => {
         let isValid = true
@@ -50,8 +57,8 @@ function SignUp() {
         if (!password) {
             setPasswordError("Password is required")
             isValid = false
-        } else if (password.length < 6) {
-            setPasswordError("Password must be at least 6 characters")
+        } else if (!isPasswordStrong) {
+            setPasswordError("Password must meet all strength requirements")
             isValid = false
         }
 
@@ -256,16 +263,19 @@ function SignUp() {
                                     <span className="font-medium">{passwordError}</span>
                                 </motion.p>
                             )}
+                            {/* ── Password strength meter ── */}
+                            <PasswordStrengthMeter password={password} />
                         </motion.div>
 
                         <motion.button
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.4 }}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={{ scale: loading || !isPasswordStrong ? 1 : 1.02 }}
+                            whileTap={{ scale: loading || !isPasswordStrong ? 1 : 0.98 }}
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || !isPasswordStrong}
+                            title={!isPasswordStrong ? 'Please satisfy all password requirements' : undefined}
                             className="w-full mt-4 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 dark:shadow-blue-900/50 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 text-lg"
                         >
                             {loading ? (
